@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新虎通り：東京の未来を紡ぐ道 - インタラクティブレポート</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Teal and Amber accents -->
+    <!-- Application Structure Plan: A thematic, non-linear interactive story with four main sections: Story (interactive timeline), Redevelopment (interactive map/diagram), Partnership (stakeholder network), and Present (art gallery/feature cards). This structure breaks down the dense report into digestible, engaging modules, prioritizing user exploration over the original report's linear format. -->
+    <!-- Visualization & Content Choices: Timeline (Change -> Interactive JS Timeline), Projects (Organize -> Interactive HTML/CSS map + JS content pane), Tower Scale (Compare -> Chart.js Bar Chart), Stakeholders (Relationships -> Interactive HTML/CSS network diagram), Governance (Change -> HTML/CSS flowchart), Art (Inform -> JS Carousel). All choices avoid SVG/Mermaid and use interactive canvas or HTML/CSS to make complex information intuitive and explorable. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #f8f7f2; /* Warm neutral background */
+            color: #333;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #0d9488; /* Teal */
+            border-bottom-color: #0d9488;
+        }
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: #4b5563;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 3rem auto;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .timeline-item.active .timeline-dot {
+            background-color: #0d9488;
+            transform: scale(1.5);
+        }
+        .timeline-item.active .timeline-year {
+            color: #0d9488;
+            font-weight: 700;
+        }
+        .dev-block.active {
+            background-color: #0d9488 !important;
+            color: white !important;
+        }
+        .stakeholder-node.active {
+            background-color: #c2410c;
+            color: white;
+            box-shadow: 0 0 15px rgba(194, 65, 12, 0.5);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .art-card {
+            flex: 0 0 90%;
+            scroll-snap-align: center;
+        }
+        @media (min-width: 768px) {
+            .art-card {
+                flex: 0 0 45%;
+            }
+        }
+        @media (min-width: 1024px) {
+            .art-card {
+                flex: 0 0 30%;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">新虎通り</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#story" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">物語</a>
+                        <a href="#redevelopment" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">再開発</a>
+                        <a href="#partnership" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">連携モデル</a>
+                        <a href="#present" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">現在の姿</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">
+                    <span class="block">新虎通り</span>
+                    <span class="block text-teal-600 text-3xl md:text-5xl mt-2">東京の未来を紡ぐ道</span>
+                </h1>
+                <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
+                    戦後の幻の計画から、東京を代表するシンボルストリートへ。70年以上にわたる壮大な都市再生の物語を、インタラクティブに紐解きます。
+                </p>
+            </div>
+        </section>
+
+        <section id="story" class="py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">物語の始まり</h2>
+                <p class="section-subtitle">
+                    「マッカーサー道路」と呼ばれた幻の計画から、新虎通りの誕生まで。70年近い歳月をかけた変遷の道のりを、インタラクティブな年表でたどります。キーとなる出来事を選択して、その背景を詳しく見てみましょう。
+                </p>
+                <div class="lg:grid lg:grid-cols-3 lg:gap-8 items-start">
+                    <div class="lg:col-span-1">
+                        <div id="timeline-nav" class="space-y-2"></div>
+                    </div>
+                    <div class="lg:col-span-2 mt-8 lg:mt-0">
+                        <div id="timeline-content" class="card p-8 min-h-[300px]">
+                            <h3 id="timeline-title" class="text-2xl font-bold text-teal-700 mb-2"></h3>
+                            <p id="timeline-text" class="text-gray-600"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="redevelopment" class="py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">再開発の全体像</h2>
+                <p class="section-subtitle">
+                    新虎通りの再開発は、森ビルが主導する虎ノ門ヒルズだけではありません。複数のデベロッパーが関わった公民連携の巨大プロジェクトです。下の図から街区を選択し、各プロジェクトの詳細をご覧ください。
+                </p>
+                <div class="lg:grid lg:grid-cols-3 lg:gap-8 items-start">
+                    <div class="lg:col-span-1">
+                        <div class="p-4 bg-gray-100 rounded-lg">
+                            <h3 class="font-bold text-center mb-4">新虎通り 沿道開発マップ</h3>
+                            <div class="space-y-2">
+                                <div class="text-center text-sm font-bold text-gray-500">↑ 虎ノ門方面</div>
+                                <button data-block="toranomon-hills" class="dev-block w-full text-left p-4 bg-white rounded-lg shadow transition">
+                                    <h4 class="font-bold">虎ノ門ヒルズ (III街区)</h4>
+                                    <p class="text-sm text-gray-500">森ビルによる中核プロジェクト</p>
+                                </button>
+                                <button data-block="gaiku-2" class="dev-block w-full text-left p-4 bg-white rounded-lg shadow transition">
+                                    <h4 class="font-bold">グランスィート虎ノ門 (II街区)</h4>
+                                    <p class="text-sm text-gray-500">丸紅による先行住宅開発</p>
+                                </button>
+                                <button data-block="gaiku-1" class="dev-block w-full text-left p-4 bg-white rounded-lg shadow transition">
+                                    <h4 class="font-bold">新橋プラザビル (I街区)</h4>
+                                    <p class="text-sm text-gray-500">西松建設による新橋側開発</p>
+                                </button>
+                                <div class="text-center text-sm font-bold text-gray-500">↓ 新橋方面</div>
+                            </div>
+                        </div>
+                        <div class="mt-8">
+                            <h3 class="font-bold text-center mb-4">虎ノ門ヒルズ タワー比較</h3>
+                            <div class="chart-container">
+                                <canvas id="towersChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 mt-8 lg:mt-0">
+                        <div id="redevelopment-content" class="card p-8 min-h-[500px]">
+                            <h3 id="dev-title" class="text-2xl font-bold text-teal-700 mb-2"></h3>
+                            <p id="dev-developer" class="text-lg font-semibold text-gray-800 mb-1"></p>
+                            <p id="dev-completed" class="text-sm text-gray-500 mb-4"></p>
+                            <p id="dev-description" class="text-gray-600"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="partnership" class="py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">成功を支える連携モデル</h2>
+                <p class="section-subtitle">
+                    この巨大プロジェクトは、行政、デベロッパー、地域社会が精緻に連携する公民連携（PPP）モデルによって実現しました。下の図から関係者を選択し、それぞれの役割を見てみましょう。
+                </p>
+                <div class="grid md:grid-cols-2 gap-12 items-start">
+                    <div>
+                        <h3 class="text-xl font-bold text-center mb-6">ステークホルダー・エコシステム</h3>
+                        <div class="relative p-8 bg-gray-50 rounded-lg">
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-gray-500">公的セクター</h4>
+                                    <button data-stakeholder="tokyo" class="stakeholder-node mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-white shadow-md transition">東京都</button>
+                                    <button data-stakeholder="minato" class="stakeholder-node mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-white shadow-md transition">港区</button>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-gray-500">調整機関</h4>
+                                    <button data-stakeholder="ur" class="stakeholder-node mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-white shadow-md transition">UR都市機構</button>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-gray-500">民間セクター</h4>
+                                    <button data-stakeholder="mori" class="stakeholder-node mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-white shadow-md transition">森ビル</button>
+                                    <button data-stakeholder="other-devs" class="stakeholder-node mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-white shadow-md transition">他デベロッパー</button>
+                                </div>
+                            </div>
+                             <div class="mt-8 text-center">
+                                <h4 class="font-semibold text-gray-500">実行組織</h4>
+                                <button data-stakeholder="area-management" class="stakeholder-node mx-auto w-48 h-24 flex items-center justify-center rounded-lg bg-white shadow-md transition">（一社）新虎通り<br>エリアマネジメント</button>
+                            </div>
+                        </div>
+                        <div id="stakeholder-content" class="mt-6 card p-6 min-h-[150px] bg-orange-50 border border-orange-200">
+                             <h4 id="stakeholder-name" class="text-lg font-bold text-orange-800"></h4>
+                             <p id="stakeholder-role" class="text-sm font-semibold text-orange-700 mb-2"></p>
+                             <p id="stakeholder-desc" class="text-gray-600"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-center mb-6">まちを育てるガバナンスの進化</h3>
+                        <div class="relative p-6">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-1 bg-gray-200 rounded-full"></div>
+                            <div class="space-y-8">
+                                <div class="relative pl-8">
+                                    <div class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 bg-gray-300 rounded-full border-4 border-white"></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md ml-4">
+                                        <p class="font-bold">フェーズ1: 準備段階 (1996~)</p>
+                                        <p class="text-sm text-gray-600">まちづくり協議会が発足。地権者間の合意形成が始まる。</p>
+                                    </div>
+                                </div>
+                                <div class="relative pl-8">
+                                    <div class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 bg-gray-300 rounded-full border-4 border-white"></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md ml-4">
+                                        <p class="font-bold">フェーズ2: 連携・調整 (2014~)</p>
+                                        <p class="text-sm text-gray-600">エリアマネジメント協議会が発足。開通後の活動を調整。</p>
+                                    </div>
+                                </div>
+                                <div class="relative pl-8">
+                                    <div class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 bg-gray-300 rounded-full border-4 border-white"></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md ml-4">
+                                        <p class="font-bold">フェーズ3: 事業化 (2015~)</p>
+                                        <p class="text-sm text-gray-600">一般社団法人が設立。賑わい創出を「事業」として展開。</p>
+                                    </div>
+                                </div>
+                                <div class="relative pl-8">
+                                    <div class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-4 h-4 bg-gray-300 rounded-full border-4 border-white"></div>
+                                    <div class="bg-white p-4 rounded-lg shadow-md ml-4">
+                                        <p class="font-bold">フェーズ4: 戦略的計画 (2020~)</p>
+                                        <p class="text-sm text-gray-600">エリアプラットフォーム協議会が発足。官民一体で未来ビジョンを策定。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="present" class="py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">現在の姿と未来へのビジョン</h2>
+                <p class="section-subtitle">
+                    現在の新虎通りは、アートと賑わいにあふれる「生きた都市空間」です。パブリックアートを鑑賞し、このエリアが目指す未来の姿を探ってみましょう。
+                </p>
+                
+                <div class="mb-16">
+                    <h3 class="text-2xl font-bold text-center mb-6">ストリート・ミュージアム：パブリックアート</h3>
+                     <div class="relative">
+                        <div id="art-gallery" class="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold text-center mb-6">未来ビジョン：4つの「めざすまちの姿」</h3>
+                    <div id="vision-accordion" class="max-w-3xl mx-auto space-y-3">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>このページは提供されたレポートに基づき、情報を視覚的に再構成したものです。</p>
+            <p class="text-sm text-gray-400 mt-2">Interactive Report Generator</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const timelineData = [
+            { year: 1946, title: '壮大な計画の始動', text: '戦後復興計画の一環として、幅員100mの環状第2号線が都市計画決定。「マッカーサー道路」の通称が生まれる。' },
+            { year: 1989, title: '法的ブレークスルー', text: '道路と建築物の一体開発を可能にする「立体道路制度」が創設。計画停滞を打破する鍵となる。' },
+            { year: 1998, title: '計画の根本的転換', text: '道路本線を地下トンネル化する都市計画変更が決定。地上空間の再開発に道を開く。' },
+            { year: 2013, title: '新たなアイデンティティ', text: '公募により地上部街路の愛称が「新虎通り」に決定。未来志向のシンボルとしての第一歩。' },
+            { year: 2014, title: '「幻」から「現実」へ', text: '計画決定から68年、新虎通りが開通。中核施設「虎ノ門ヒルズ 森タワー」も同時に開業。' },
+            { year: 2015, title: 'まちづくりの事業化', text: '「一般社団法人新虎通りエリアマネジメント」設立。持続的な賑わい創出の実行部隊が誕生。' },
+            { year: 2023, title: '歩行者中心の新たな段階へ', text: '「歩行者利便増進道路（ほこみち）」に指定。歩道空間の柔軟な活用が可能になる。' }
+        ];
+
+        const redevelopmentData = {
+            'toranomon-hills': {
+                title: '虎ノ門ヒルズ (III街区)',
+                developer: 'デベロッパー: 森ビル株式会社',
+                completed: '竣工: 2014年〜2023年',
+                description: 'オフィス、ホテル、住宅、商業施設等が集積するエリアの中核。立体道路制度を最大限に活用し、道路と一体で開発された。森タワー、ビジネスタワー、レジデンシャルタワー、ステーションタワーの4棟で構成される「都市の中の都市」。'
+            },
+            'gaiku-2': {
+                title: 'グランスィート虎ノ門 (II街区)',
+                developer: 'デベロッパー: 丸紅株式会社',
+                completed: '竣工: 2007年',
+                description: '新虎通り沿道で最も早く完成したプロジェクト。地上21階建ての高級賃貸住宅で、エリアの居住機能を先行して整備する役割を果たした。'
+            },
+            'gaiku-1': {
+                title: '新橋プラザビル (I街区)',
+                developer: 'デベロッパー: 西松建設株式会社',
+                completed: '竣工: 2011年',
+                description: '新虎通りの新橋側起点に位置するオフィス・商業複合ビル。虎ノ門ヒルズに先駆けて完成し、エリア全体の再開発の機運を高めた。'
+            }
+        };
+        
+        const stakeholderData = {
+            'tokyo': { name: '東京都', role: 'オーケストレーター (全体統括者)', description: '事業全体の施行者として、都市計画決定や立体道路制度の適用など、プロジェクトの法的・制度的枠組みを構築し、全体を指揮した。' },
+            'minato': { name: '港区', role: 'コーディネーター (地域調整役)', description: '基礎自治体として、地区計画策定や地域住民との連携を担い、エリアマネジメントにも深く関与。' },
+            'ur': { name: 'UR都市機構', role: '触媒 (公民連携の橋渡し役)', description: '公と民の間に立ち、まちづくり協議会の運営支援や利害調整など、事業を円滑に進めるための重要な調整役を果たした。' },
+            'mori': { name: '森ビル株式会社', role: 'ドライバー (民間主導者)', description: '虎ノ門ヒルズ開発を主導し、「国際新都心」というビジョンを提示。エリア全体の価値向上に長期的にコミットする最大の民間事業者。' },
+            'other-devs': { name: '他デベロッパー (西松建設・丸紅など)', role: 'サポーター (分担実行者)', description: 'I街区・II街区の開発を担い、それぞれの専門性を活かしてプロジェクトのリスク分散と段階的な推進に貢献した。' },
+            'area-management': { name: '（一社）新虎通りエリアマネジメント', role: 'スチュワード (まちの育成者)', description: 'まちの賑わいを創出する実務部隊。オープンカフェやイベントを主体的に運営し、持続可能なまちづくりを担う。' }
+        };
+
+        const artData = [
+            { name: '《ルーツ (Roots)》', artist: 'ジャウメ・プレンサ', year: 2014, location: '虎ノ門ヒルズ 森タワー前', desc: '8つの言語の文字で構成された人型の巨大彫刻。エリアの象徴的存在。' },
+            { name: '《Two Lovers, in Structure》', artist: 'タイラー・ホッブス', year: 2023, location: '新虎通り沿道', desc: 'アルゴリズムで生成された大規模な壁画。対話する恋人がテーマ。' },
+            { name: '《Firmament (Mori)》', artist: 'レオ・ビラリール', year: 2023, location: 'ステーションタワー', desc: 'エントランスの天井に広がる光のインスタレーション。夜空や宇宙を想起させる。' },
+            { name: '《Our New World (Toranomon)》', artist: '清川あさみ', year: 2023, location: '虎ノ門ヒルズ駅 改札内', desc: '世界中の都市風景を重ね合わせた大型ステンドグラス。' },
+            { name: '《Universe 29》', artist: 'ジャン・ワン', year: 2014, location: '森タワー オフィスロビー', desc: '自然の岩を砕き、ステンレスで再現したサイトスペシフィックな作品。' }
+        ];
+        
+        const visionData = [
+            { title: 'ヒト・モノ・コトが集まるまち', content: '多様な人々を惹きつけ、新しいビジネスや文化が生まれる磁力ある都市空間を創造する。' },
+            { title: '交流を通じて新たな価値が生まれるまち', content: '地域の資源を活用し、住民やワーカー、来街者など様々なプレイヤーの交流を促進することで、新たなコミュニティやイノベーションを育む。' },
+            { title: '国内外へエリアの魅力と価値を発信するまち', content: 'エリア全体を社会実験の場（ショーケース）として活用し、その魅力を国内外に広く発信する。' },
+            { title: '多様性を支える持続可能な仕組みを備えたまち', content: '官民連携のプラットフォームを強化し、エリアマネジメント活動を支える自律的な財源を確保することで、持続可能なまちづくりを実現する。' }
+        ];
+
+
+        const timelineNav = document.getElementById('timeline-nav');
+        const timelineTitle = document.getElementById('timeline-title');
+        const timelineText = document.getElementById('timeline-text');
+
+        timelineData.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'timeline-item p-4 rounded-lg cursor-pointer transition hover:bg-gray-100 flex items-center';
+            div.dataset.index = index;
+            div.innerHTML = `
+                <div class="timeline-dot w-3 h-3 bg-gray-300 rounded-full transition-all duration-300"></div>
+                <div class="ml-4">
+                    <p class="timeline-year font-bold text-lg text-gray-800">${item.year}年</p>
+                    <p class="text-sm text-gray-500">${item.title}</p>
+                </div>
+            `;
+            timelineNav.appendChild(div);
+        });
+
+        function updateTimeline(index) {
+            const item = timelineData[index];
+            timelineTitle.textContent = `${item.year}年: ${item.title}`;
+            timelineText.textContent = item.text;
+            
+            document.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.timeline-item[data-index='${index}']`).classList.add('active');
+        }
+
+        timelineNav.addEventListener('click', (e) => {
+            const item = e.target.closest('.timeline-item');
+            if (item) {
+                updateTimeline(item.dataset.index);
+            }
+        });
+
+        updateTimeline(0);
+
+
+        const devContent = {
+            title: document.getElementById('dev-title'),
+            developer: document.getElementById('dev-developer'),
+            completed: document.getElementById('dev-completed'),
+            description: document.getElementById('dev-description')
+        };
+        
+        function updateDevContent(blockId) {
+            const data = redevelopmentData[blockId];
+            devContent.title.textContent = data.title;
+            devContent.developer.textContent = data.developer;
+            devContent.completed.textContent = data.completed;
+            devContent.description.textContent = data.description;
+
+            document.querySelectorAll('.dev-block').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-block='${blockId}']`).classList.add('active');
+        }
+
+        document.querySelectorAll('.dev-block').forEach(button => {
+            button.addEventListener('click', () => {
+                updateDevContent(button.dataset.block);
+            });
+        });
+
+        updateDevContent('toranomon-hills');
+
+        const towersCtx = document.getElementById('towersChart').getContext('2d');
+        new Chart(towersCtx, {
+            type: 'bar',
+            data: {
+                labels: ['森タワー', 'ビジネスタワー', 'レジデンシャルタワー', 'ステーションタワー'],
+                datasets: [{
+                    label: 'タワーの高さ (m)',
+                    data: [247, 185, 222, 266],
+                    backgroundColor: ['#0f766e', '#14b8a6', '#5eead4', '#99f6e4'],
+                    borderColor: '#0d9488',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: '虎ノ門ヒルズ主要タワーの高さ' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '高さ (m)' }
+                    }
+                }
+            }
+        });
+        
+        const stakeholderContent = {
+            name: document.getElementById('stakeholder-name'),
+            role: document.getElementById('stakeholder-role'),
+            desc: document.getElementById('stakeholder-desc')
+        };
+        
+        function updateStakeholderContent(id) {
+            const data = stakeholderData[id];
+            stakeholderContent.name.textContent = data.name;
+            stakeholderContent.role.textContent = data.role;
+            stakeholderContent.desc.textContent = data.description;
+            
+            document.querySelectorAll('.stakeholder-node').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-stakeholder='${id}']`).classList.add('active');
+        }
+        
+        document.querySelectorAll('.stakeholder-node').forEach(node => {
+            node.addEventListener('click', () => {
+                updateStakeholderContent(node.dataset.stakeholder);
+            });
+        });
+        
+        updateStakeholderContent('tokyo');
+
+        const artGallery = document.getElementById('art-gallery');
+        artData.forEach(art => {
+            const div = document.createElement('div');
+            div.className = 'art-card card p-6 w-full md:w-1/2 lg:w-1/3 transition-all duration-300';
+            div.innerHTML = `
+                <div class="h-48 bg-gray-200 rounded-md mb-4 flex items-center justify-center">
+                    <img src="https://placehold.co/300x200/e2e8f0/64748b?text=${encodeURIComponent(art.name)}" alt="${art.name}" class="w-full h-full object-cover rounded-md">
+                </div>
+                <h4 class="font-bold text-lg">${art.name}</h4>
+                <p class="text-sm text-gray-600 font-semibold">${art.artist} (${art.year})</p>
+                <p class="text-xs text-gray-500 mt-1">設置場所: ${art.location}</p>
+                <p class="text-sm text-gray-700 mt-2">${art.desc}</p>
+            `;
+            artGallery.appendChild(div);
+        });
+        
+        const visionAccordion = document.getElementById('vision-accordion');
+        visionData.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'border border-gray-200 rounded-lg';
+            div.innerHTML = `
+                <button class="vision-toggle w-full flex justify-between items-center p-4 text-left font-semibold text-gray-800 bg-gray-50 hover:bg-gray-100 transition">
+                    <span>${index + 1}. ${item.title}</span>
+                    <span class="transform transition-transform duration-300">▼</span>
+                </button>
+                <div class="vision-content hidden p-4 border-t border-gray-200 bg-white">
+                    <p class="text-gray-600">${item.content}</p>
+                </div>
+            `;
+            visionAccordion.appendChild(div);
+        });
+        
+        visionAccordion.addEventListener('click', (e) => {
+            const toggle = e.target.closest('.vision-toggle');
+            if (toggle) {
+                const content = toggle.nextElementSibling;
+                const icon = toggle.querySelector('span:last-child');
+                const isVisible = !content.classList.contains('hidden');
+                
+                content.classList.toggle('hidden');
+                icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        });
+        
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('main section[id]');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href').substring(1) === entry.target.id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-50% 0px -50% 0px' });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        navLinks.forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+    </script>
+</body>
+</html>
