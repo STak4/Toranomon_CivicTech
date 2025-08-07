@@ -115,7 +115,7 @@ public class ObjectDetectionSample: MonoBehaviour
                 _confidence = result[i].GetConfidence(_categoryName);   
 
                 //filter out the objects with confidence less than the threshold 
-                if (_confidence< _probabilityThreshold)
+                if (_confidence < _probabilityThreshold)
                 {
                     break;
                 }
