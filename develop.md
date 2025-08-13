@@ -24,3 +24,42 @@ Occlusion Suppression: 特定のセマンティック・チャンネルのため
 オクルージョン・サプレッションを使用するには、ここにSemantic Segmentation Managerをアタッチします。 詳しくは How to Setup Real World Occlusion をご覧ください。
 Suppression Channels（サプレッションチャンネル）
 サプレッションに使用するセマンティック・バッファ内のチャンネルのセット。 各チャンネルの名称を個別の名称としてリストに追加します。 多くのオクルージョンの問題に対する有効な総合的な解決策として、 ground と sky を追加することをお勧めします。
+
+### Playback
+- Playbackでは下記データは保存し呼出し出来る様子。
+  - カメラローカルポジション："pose"にて保管されている。ローカル座標管理。　カメラオブジェクトにてデータ参照可能。
+  - カメラローカルロテーション："pose"にて保管されている。ローカル座標管理。　カメラオブジェクトにてデータ参照可能。
+  - 現在時刻："timestamp"にて保管されている。　UNIX時間。取得方法は無さそう。
+  - 緯度経度座標記録時刻："positionTimestamp"にて保管されている。Input.location.lastData.timestampで取得可能。凡そ1sec/1logで時刻確認は概ね可能。UNIX時間。日本時間は+9h。
+
+### Using Location Services with Playback
+Wherever you would use the UnityEngine.Input API normally, instead use Lightship’s implementation by adding using Input = Niantic.Lightship.AR.Input; to the top of your C# file. Lightship’s implementation has the exact same API as Unity’s; and when not running in Playback mode, it is a simple passthrough to Unity’s APIs. When in Playback mode, it’ll supply the location data from the active dataset.
+
+通常 、UnityEngine.Input API を使用する場合は、C# ファイルの先頭に using Input = Niantic.Lightship.AR.Input; を追加して、Lightshipの実装を使用します。 Lightshipの実装は、UnityのAPIとまったく同じであり、プレイバックモードで動作していないときは、UnityのAPIへのシンプルなパススルーです。 プレイバックモードでは、アクティブなデータセットから位置データを指定します。
+
+- PlaybackにてWPSも動作することを確認（Sample > CompassSceneにて）
+- 下記は開発者側で動作確認をしたPlayback時のUnity.Input一般情報取得スクリプト(上述usingによりInputを置き換えしている。)
+
+``` C# unity
+using System;
+using UnityEngine;
+using Input = Niantic.Lightship.AR.Input;
+
+public class GPSCheckerFromNiantic : MonoBehaviour
+{
+    private void Update()
+    {
+        if (Input.location.status == LocationServiceStatus.Running)
+        {
+            double latitude = Input.location.lastData.latitude;
+            double longitude = Input.location.lastData.longitude;
+            double timestamp = Input.location.lastData.timestamp;
+
+            DateTimeOffset gpsTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp);
+            DateTimeOffset gpsTimeJST = gpsTime.ToOffset(TimeSpan.FromHours(9));
+
+            Debug.Log($"GPS is enabled: Latitude = {latitude}, Longitude = {longitude}, Timestamp = {gpsTimeJST} (JST)");
+        }
+    }
+}
+```
