@@ -1342,7 +1342,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _deviceMappingManager: {fileID: 1531590617}
-  _saveToFile: 1
+  _saveToFile: 0
 --- !u!1 &613323761
 GameObject:
   m_ObjectHideFlags: 0
@@ -3673,7 +3673,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1531590613}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64177fd34c058443c9f43ae59563ce2e, type: 3}
   m_Name: 
@@ -3699,7 +3699,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1531590613}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99a73d46f61f439b8915f2b79c407150, type: 3}
   m_Name: 

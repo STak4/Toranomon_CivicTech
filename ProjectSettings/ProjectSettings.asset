@@ -8,12 +8,12 @@ PlayerSettings:
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
-  defaultScreenOrientation: 3
+  defaultScreenOrientation: 0
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: ToranomonCivicTech
-  productName: TCTpreVer001
+  productName: TCTpreVer003
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -140,7 +140,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 0.001.0807
+  bundleVersion: 0.003.0813
   preloadedAssets:
   - {fileID: 4800000, guid: b02d09082cbc14569ae46c12d9836abc, type: 3}
   - {fileID: 4800000, guid: f40a6c94c8e1b494d93d434ae522a14f, type: 3}
@@ -174,7 +174,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.ToranomonCivicTech.TCTpreVer001
+    Android: com.ToranomonCivicTech.TCTpreVer003
     Standalone: com.nianticspatial.ardk.ardksamples
     iPhone: com.nianticspatial.ardk.ardksamples
   buildNumber:

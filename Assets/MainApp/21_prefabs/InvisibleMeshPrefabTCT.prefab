@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 252096253453997081}
   - component: {fileID: 7893389973303568606}
   m_Layer: 8
-  m_Name: InvisibleMeshPrefab
+  m_Name: InvisibleMeshPrefabTCT
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
