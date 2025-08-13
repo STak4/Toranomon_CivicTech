@@ -9,6 +9,7 @@ Repository for TNXR Hackathon Unity ver 6000.0.50f1
 ## 開発環境
 
 ### OS
+- Mac OS26beta
 - Windows 11
 
 ### Unity Version
@@ -27,11 +28,10 @@ Repository for TNXR Hackathon Unity ver 6000.0.50f1
 
 ### Build Settings
 - Android Build
-- iOS Build(未定)
+- iOS Build
 
 ### Project Settings
 - Templatesの設定に依存
-- Flutterのための設定要確認
 
 ### Niantic API
 - Niantic spatial platformにて API Keyを取得して設定する
