@@ -77,8 +77,12 @@ public class CloudPersistenceTCT : MonoBehaviour
     private Button _exitInGameButton;
     
     private string _roomName;
+
+    // マップデータをサーバーに送るトリガーboolean
     private bool _sendNewMap;
+    // トラッキングを開始するトリガーboolean
     private bool _waitForMap;
+    // ロードデータをサーバーおよびローカルから削除するトリガーboolean
     private bool _clearOnLoad;
 
     /// <summary>
@@ -87,8 +91,11 @@ public class CloudPersistenceTCT : MonoBehaviour
     void Start()
     {
         //we want to use the datastore so turning off the local file save option
-        _tracker._loadFromFile = false;
-        _mapper._saveToFile = false;
+
+        //■■■■　START　設定のコメントアウト　■■■■
+        // _tracker._loadFromFile = false;
+        // _mapper._saveToFile = false;
+        //■■■■　END　■■■■
 
         SetUp_CreateMenu();
     }

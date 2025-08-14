@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using System.IO;
 using Niantic.Lightship.AR.Mapping;
 using Niantic.Lightship.AR.MapStorageAccess;
@@ -17,10 +18,7 @@ public class MapperTCT : MonoBehaviour
 
     // マッピング完了時に通知されるイベント
     public Action<bool> _onMappingComplete;
-
-    // マップをファイルに保存するかどうか
-    public bool _saveToFile = true;
-    
+   
     void Start()
     {
         // Start(): マッピングマネージャの各種設定を行い、モジュールを再起動します。
@@ -40,7 +38,9 @@ public class MapperTCT : MonoBehaviour
     /// </summary>
     public void RunMappingFor(float seconds)
     {
+        // DeviceMapFinalized: デフォルトではAsset内はMapperのみしか利用していない。
         _deviceMappingManager.DeviceMapFinalized += OnDeviceMapFinalized;
+        _deviceMappingManager.DeviceMapFinalized += async (map) => await SaveMapOnDevice(map);
         currentCo = StartCoroutine(RunMapping(seconds));
     }
 
@@ -56,10 +56,12 @@ public class MapperTCT : MonoBehaviour
     {
         // OnDestroy(): マップ確定イベントの購読を解除します。
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
+        _deviceMappingManager.DeviceMapFinalized -= async (map) => await SaveMapOnDevice(map);
     }
     
     /// <summary>
     /// RunMapping(float seconds): コルーチン。マッピングを開始し、指定秒数後に停止します。
+    /// ◆◆指定秒数制御なので、時間に応じて精度依存が出る様子◆◆
     /// </summary>
     private IEnumerator RunMapping(float seconds)
     {
@@ -81,6 +83,8 @@ public class MapperTCT : MonoBehaviour
 
     /// <summary>
     /// StopMapping(): マッピングを強制停止します。コルーチンも停止し、イベント購読も解除します。
+    /// ◆◆主にフェーズ・シーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
+    /// 　→　基本はClearAllState()の補助関数で良さそう。
     /// </summary>
     public void StopMapping()
     {
@@ -88,6 +92,7 @@ public class MapperTCT : MonoBehaviour
         {
             StopCoroutine(currentCo);
             _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
+            _deviceMappingManager.DeviceMapFinalized -= async (map) => await SaveMapOnDevice(map);
             _deviceMappingManager.StopMapping();
             _mappingInProgress = false;
         }
@@ -95,6 +100,8 @@ public class MapperTCT : MonoBehaviour
 
     /// <summary>
     /// ClearAllState(): 全状態のクリア。マッピング停止とマップデータのクリアを行います。
+    /// ◆◆主にシーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
+    /// 　→　基本は、動作を抜ける際に実行する。
     /// </summary>
     public void ClearAllState()
     {
@@ -105,27 +112,33 @@ public class MapperTCT : MonoBehaviour
 
     /// <summary>
     /// OnDeviceMapFinalized(ARDeviceMap map): マップ作成完了時の処理。マップが有効ならファイルへ保存し、完了通知を行います。
+    /// ◆◆通知およびデータ保存用の処理　→　通知と保存は分ける。◆◆
     /// </summary>
     private void OnDeviceMapFinalized(ARDeviceMap map)
     {
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
+        _deviceMappingManager.DeviceMapFinalized -= async (map) => await SaveMapOnDevice(map);
         
         bool success = false;
         
         //if a map was created save it to a file
+        if (map.HasValidMap()) success = true;
+        else Debug.LogWarning("No valid map created.");
+
+        Debug.Log("== Mapping Complete. ==");
+        _onMappingComplete?.Invoke(success);
+    }
+
+    // OnDeviceMapFinalized()から分離・追加
+    private async Task SaveMapOnDevice(ARDeviceMap map)
+    {
         if (map.HasValidMap())
         {
-            success = true;
-            if (_saveToFile == true)
-            {
-                // map update. save as a new map to the file system
-                var fileName = OnDevicePersistenceTCT.k_mapFileName;
-                var serializedDeviceMap = map.Serialize();
-                var path = Path.Combine(Application.persistentDataPath, fileName);
-                File.WriteAllBytes(path, serializedDeviceMap);
-               
-            }
+            var fileName = "map.dat";
+            var serializedDeviceMap = map.Serialize();
+            var path = Path.Combine(Application.persistentDataPath, fileName);
+            await File.WriteAllBytesAsync(path, serializedDeviceMap);
+            Debug.Log($"== Map saved to {path} ==");
         }
-        _onMappingComplete?.Invoke(success);
     }
 }

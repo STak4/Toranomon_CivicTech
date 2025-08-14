@@ -42,18 +42,10 @@ public class TrackerTCT : MonoBehaviour
         get
         {
             //if we are localised return the anchor
-            if(_anchor)
-                return _anchor.transform;
-            else
-            {
-                //if we are not yet localised return a temp root.
-                if(!_tempAnchor)
-                {
-                    _tempAnchor = new GameObject("TempAnchor");
-                }
-            
-                return _tempAnchor.transform;
-            }
+            if(_anchor) return _anchor.transform;
+            //if we are not yet localised return a temp root.
+            else if(!_tempAnchor) { _tempAnchor = new GameObject("TemporaryAnchor"); }
+            return _tempAnchor.transform;
         }
     }
     
@@ -61,17 +53,9 @@ public class TrackerTCT : MonoBehaviour
     {
         // Update(): ローカライズが完了した場合、一時アンカーに紐付いていたオブジェクトを本アンカーに移動します。
         //cleans up any items that were added before we localised by reparenting them to the proper anchor
-        if (_anchor && _anchor.trackingState == TrackingState.Tracking)
-        {
-            if (_tempAnchor)
-            {
-                //move them
-                for (int i = 0; i < _tempAnchor.transform.childCount; i++)
-                {
-                    _tempAnchor.transform.GetChild(i).SetParent(_anchor.transform, false);
-                }
-            }
-        }
+        if (_tempAnchor && _anchor && _anchor.trackingState == TrackingState.Tracking)
+            for (int i = 0; i < _tempAnchor.transform.childCount; i++)
+                _tempAnchor.transform.GetChild(i).SetParent(_anchor.transform, false);
     }
     
     private void Start()
@@ -88,51 +72,43 @@ public class TrackerTCT : MonoBehaviour
 
     /// <summary>
     /// OnArPersistentAnchorStateChanged(ARPersistentAnchorStateChangedEventArgs args): アンカーのトラッキング状態が「Tracking」になった時、トラッキング成功の通知を行います。
+    /// ◆◆トラッキング成功時に利用できるイベント（恐らくelse if増やせばトラッキング状態管理可能）◆◆
     /// </summary>
     private void OnArPersistentAnchorStateChanged(ARPersistentAnchorStateChangedEventArgs args)
     {
-        if (args.arPersistentAnchor.trackingState == TrackingState.Tracking)
-        {
-            _tracking?.Invoke(true);
-        }
+        // アセットでの下記アクションへの紐づきはメニュー表示程度で動作に大きな影響なし。
+        if (args.arPersistentAnchor.trackingState == TrackingState.Tracking) _tracking?.Invoke(true);
     }
     
     /// <summary>
     /// StartTracking(): トラッキング開始。必要ならファイルからマップデータを読み込み、トラッキング用コルーチンを開始します。
+    /// ◆◆◆実行動作の核のRestartTrackingDataStore()を呼び出すFunction◆◆◆
+    /// 下記のStartCoroutineを
     /// </summary>
     public void StartTracking()
     {
         _persistentAnchorManager.arPersistentAnchorStateChanged += OnArPersistentAnchorStateChanged;
-
-        if (_loadFromFile)
-        {
-            // Read a new device map from file
-            var fileName =  OnDevicePersistenceTCT.k_mapFileName;
-            var path = Path.Combine(Application.persistentDataPath, fileName);
-            var serializedDeviceMap = File.ReadAllBytes(path);
-            _deviceMap = ARDeviceMap.CreateFromSerializedData(serializedDeviceMap);
-        }
-
+        // ■■■■　下記動作に待ちを入れたので、必要に応じてクリアをしたほうが良い。　■■■■
         StartCoroutine(RestartTrackingDataStore());
     }
     
     /// <summary>
     /// StopAndDestroyAnchor(): トラッキング停止とアンカーの破棄。イベント購読も解除します。
+    /// ◆◆主にシーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
+    /// 　→　基本はClearAllState()の補助関数で良さそう。
     /// </summary>
     public void StopAndDestroyAnchor()
     {
         _persistentAnchorManager.enabled = false;
-        if (_anchor)
-        {
-            _persistentAnchorManager.DestroyAnchor(_anchor);
-        }
-
+        if (_anchor) _persistentAnchorManager.DestroyAnchor(_anchor);
         _deviceMap = null;
         _persistentAnchorManager.arPersistentAnchorStateChanged -= OnArPersistentAnchorStateChanged;
     }
 
     /// <summary>
     /// ClearAllState(): 全状態のクリア。アンカー破棄とマップデータのクリアを行います。
+    /// ◆◆主にシーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
+    /// 　→　基本は、動作を抜ける際に実行する。
     /// </summary>
     public void ClearAllState()
     {
@@ -142,6 +118,7 @@ public class TrackerTCT : MonoBehaviour
     
     /// <summary>
     /// LoadMap(byte[] serializedDeviceMap): 渡されたバイト配列からマップデータを復元します。
+    /// ◆◆引数に入れるバイト配列は.datの一式で良さそう◆◆
     /// </summary>
     public void LoadMap(byte [] serializedDeviceMap)
     {
@@ -150,12 +127,17 @@ public class TrackerTCT : MonoBehaviour
 
     /// <summary>
     /// RestartTrackingDataStore(): マップデータがセットされるまで待機し、トラッキングを再起動します。新しいアンカーでトラッキングを開始します。
+    /// ◆◆◆実行動作の核となっているFunction、ただし付随がある為別のpublic関数で実行◆◆◆
     /// </summary>
     private IEnumerator RestartTrackingDataStore()
     {
+        Debug.Log("== Restart tracking data store. ==");
         //this needs to be set!
         while (_deviceMap == null)
+        {
+            Debug.Log("== Waiting for device map set... ==");
             yield return new WaitForSeconds(1);
+        }
 
         _persistentAnchorManager.enabled = false;
 
@@ -164,17 +146,27 @@ public class TrackerTCT : MonoBehaviour
 
         _persistentAnchorManager.enabled = true;
         
+        Debug.Log("== Setting device map. ==");
         // Set the device map to mapping manager
         _deviceMappingManager.SetDeviceMap(_deviceMap);
 
+        Debug.Log("== Start tracking.... ==");
         // Set up a new tracking with a new anchor
+        // ◆◆恐らく下記のTrayTrackAnchorの内部で継続的に_anchorの位置補正をかけ続けている。
         _persistentAnchorManager.TryTrackAnchor(
             new ARPersistentAnchorPayload(_deviceMap.GetAnchorPayload()),
             out _anchor);
+        while (!_anchor && _anchor.trackingState != TrackingState.Tracking)
+        {
+            Debug.Log("== Waiting for anchor... ==");
+            yield return new WaitForSeconds(1);
+        }
+        Debug.Log("== Tracking Done. ==");
     }
 
     /// <summary>
     /// GetAnchorRelativePosition(Vector3 pos): ワールド座標をアンカー基準の座標に変換します。
+    /// ◆補助関数◆
     /// </summary>
     public Vector3 GetAnchorRelativePosition(Vector3 pos)
     {
@@ -183,6 +175,7 @@ public class TrackerTCT : MonoBehaviour
 
     /// <summary>
     /// AddObjectToAnchor(GameObject go): 指定したGameObjectをアンカーの子オブジェクトとして追加します。
+    /// ◆補助関数◆
     /// </summary>
     public void AddObjectToAnchor(GameObject go)
     {
