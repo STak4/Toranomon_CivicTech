@@ -146,3 +146,22 @@ Occlusion Suppression: 特定のセマンティック・チャンネルのため
 オクルージョン・サプレッションを使用するには、ここにSemantic Segmentation Managerをアタッチします。 詳しくは How to Setup Real World Occlusion をご覧ください。
 Suppression Channels（サプレッションチャンネル）
 サプレッションに使用するセマンティック・バッファ内のチャンネルのセット。 各チャンネルの名称を個別の名称としてリストに追加します。 多くのオクルージョンの問題に対する有効な総合的な解決策として、 ground と sky を追加することをお勧めします。
+
+
+---
+
+# Windows環境での設定
+
+## OSのパスの上限変更
+
+- `OS のパスの上限を越えています。完全修飾のファイル名は 260 文字以下にする必要があります。`への対応
+
+- レジストリで有効化
+  - Windows + R → regedit を入力して実行
+  - 以下のキーを開く
+  - `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem`
+  - `LongPathsEnabled (DWORD)`を探す
+  - 無ければ右クリック → 新規 → DWORD値 (32bit) で作成
+  - 値を 1 に設定
+  - PC を再起動
+  
