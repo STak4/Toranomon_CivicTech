@@ -7,8 +7,8 @@ using Niantic.Lightship.SharedAR.Networking;
 using UnityEngine;
 
 /// <summary>
-/// DatastoreManager
-/// Handles storing objects in the data store and syncing them to all connected clients.
+/// DatastoreManagerTCT
+/// このクラスは、データストアへのオブジェクト保存・同期・削除などを管理し、全クライアント間でデータを共有します。
 /// </summary>
 public class DatastoreManagerTCT : MonoBehaviour
 {
@@ -42,9 +42,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     private Transform _tempRoot = null;
     
     /// <summary>
-    /// CreateOrJoinDataStore
-    /// Will create new network Room and Datastore based on the string name you provice
-    /// This is a global room name for the current API key.
+    /// CreateOrJoinDataStore(string storeName)
+    /// 指定した名前のデータストア（ルーム）を作成または参加し、ネットワーク・データストアの初期化とイベント登録を行います。
     /// </summary>
     /// <param name="storeName"></param>
     public void CreateOrJoinDataStore(string storeName)
@@ -74,8 +73,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// LeaveDataStore
-    /// leave the room and clean up the client side.
+    /// LeaveDataStore()
+    /// データストア（ルーム）から退出し、イベント登録を解除します。
     /// </summary>
     public void LeaveDataStore()
     {
@@ -94,8 +93,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
     
     /// <summary>
-    /// This function listens for data store update events and as it is running on the client
-    /// we can simply add/delete/update our local version of the stored items to match the server state.
+    /// DatastoreUpdated(DatastoreCallbackArgs args)
+    /// データストアの更新イベントを受け取り、ローカルオブジェクトの追加・削除・更新を行います。
     /// </summary>
     /// <param name="args"></param>
     private void DatastoreUpdated(DatastoreCallbackArgs args)
@@ -119,6 +118,7 @@ public class DatastoreManagerTCT : MonoBehaviour
             }
             else
             {
+                Debug.Log($"Key:{args.Key} Data:{dataAsString}");
                 //do we already have this object?
                 if (_tracker.Anchor.Find(args.Key))
                 {
@@ -149,8 +149,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// NetworkUpdate
-    /// Hooking this callback just to know everything is initialised.
+    /// NetworkUpdate(NetworkEventArgs obj)
+    /// ネットワークイベント（接続・切断など）を受け取り、状態を管理します。
     /// </summary>
     /// <param name="obj"></param>
     private void NetworkUpdate(NetworkEventArgs obj)
@@ -167,8 +167,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// OnDestroy
-    /// clear up on exit
+    /// OnDestroy()
+    /// オブジェクト破棄時にデータストアから退出します。
     /// </summary>
     private void OnDestroy()
     {
@@ -176,8 +176,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
     
     /// <summary>
-    /// CreateAndPlaceCube
-    /// Manging the cube placement/storage and anchoring to map function
+    /// CreateAndPlaceCube(Vector3 localPos, Color color, string name = "Cube")
+    /// 指定位置・色・名前でキューブを生成し、アンカーの子として配置します。
     /// </summary>
     /// <param name="localPos"></param>
     /// <param name="color"></param>
@@ -198,8 +198,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// PlaceCube
-    /// Will place a colored cube and store it in the datastore
+    /// PlaceCube()
+    /// カメラ前方2mにキューブを配置し、データストアに保存します。
     /// </summary>
     public void PlaceCube()
     {
@@ -244,8 +244,8 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
     
     /// <summary>
-    /// DeleteCubes
-    /// deletes all cubes from the data store
+    /// DeleteCubes()
+    /// データストアおよびシーン上の全キューブを削除します。
     /// </summary>
     public void DeleteCubes()
     {
@@ -261,14 +261,14 @@ public class DatastoreManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// SaveMapToDatastore
-    /// Will save the current map to the data store
+    /// SaveMapToDatastore()
+    /// 現在のマップデータをデータストアに保存します。
     /// </summary>
     public void SaveMapToDatastore()
     {
         ObjectData objectData = new ObjectData();
         objectData._data = _mapper.GetMap().Serialize();
-                    
+
         string json = JsonUtility.ToJson(objectData);
         _datastore.SetData(2, "MAP_DeviceMap", Encoding.Unicode.GetBytes(json));
     }

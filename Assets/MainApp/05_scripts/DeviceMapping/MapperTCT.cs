@@ -8,38 +8,45 @@ using Niantic.Lightship.AR.MapStorageAccess;
 using UnityEngine;
 
 /// <summary>
-/// This class manages creating local maps that are stored to a file on the device
+/// このクラスは、端末上にローカルマップ（空間情報）を作成し、ファイルに保存する管理を行います。
 /// </summary>
 public class MapperTCT : MonoBehaviour
 {
     [SerializeField]
     private ARDeviceMappingManager _deviceMappingManager;
 
-    //subscribe to this to know mapping has completed
+    // マッピング完了時に通知されるイベント
     public Action<bool> _onMappingComplete;
 
-    //if we want the map to be written to the device or not.
+    // マップをファイルに保存するかどうか
     public bool _saveToFile = true;
     
     void Start()
     {
-        //set up on device mapping
+        // Start(): マッピングマネージャの各種設定を行い、モジュールを再起動します。
         _deviceMappingManager.MappingSplitterMaxDistanceMeters = 10.0f;
         _deviceMappingManager.MappingSplitterMaxDurationSeconds = 1000.0f;
         _deviceMappingManager.DeviceMapAccessController.OutputEdgeType = OutputEdgeType.All;
         
-        //update manager to use new settings.
+        // マネージャの設定を反映
         StartCoroutine(_deviceMappingManager.RestartModuleAsyncCoroutine());
     }
 
     private Coroutine currentCo;
     private bool _mappingInProgress = false;
+
+    /// <summary>
+    /// RunMappingFor(float seconds): 指定秒数だけマッピングを実行します。完了時にイベント通知します。
+    /// </summary>
     public void RunMappingFor(float seconds)
     {
         _deviceMappingManager.DeviceMapFinalized += OnDeviceMapFinalized;
         currentCo = StartCoroutine(RunMapping(seconds));
     }
 
+    /// <summary>
+    /// GetMap(): 現在のマップデータ（ARDeviceMap）を取得します。
+    /// </summary>
     public ARDeviceMap GetMap()
     {
         return _deviceMappingManager.ARDeviceMap;
@@ -47,11 +54,13 @@ public class MapperTCT : MonoBehaviour
 
     private void OnDestroy()
     {
+        // OnDestroy(): マップ確定イベントの購読を解除します。
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
     }
     
-    //scanning is just on a timer to make some of the UX eaiser
-    //you can easily modify the code have a start and stop button if you prefer
+    /// <summary>
+    /// RunMapping(float seconds): コルーチン。マッピングを開始し、指定秒数後に停止します。
+    /// </summary>
     private IEnumerator RunMapping(float seconds)
     {
         // Reset the ARDeviceMappingManager
@@ -70,7 +79,9 @@ public class MapperTCT : MonoBehaviour
         _mappingInProgress = false;
     }
 
-    //called if you hit exit while scanning is happening.
+    /// <summary>
+    /// StopMapping(): マッピングを強制停止します。コルーチンも停止し、イベント購読も解除します。
+    /// </summary>
     public void StopMapping()
     {
         if (_mappingInProgress)
@@ -82,7 +93,9 @@ public class MapperTCT : MonoBehaviour
         }
     }
 
-    
+    /// <summary>
+    /// ClearAllState(): 全状態のクリア。マッピング停止とマップデータのクリアを行います。
+    /// </summary>
     public void ClearAllState()
     {
         StopMapping();
@@ -90,6 +103,9 @@ public class MapperTCT : MonoBehaviour
         _deviceMappingManager.DeviceMapAccessController.ClearDeviceMap();
     }
 
+    /// <summary>
+    /// OnDeviceMapFinalized(ARDeviceMap map): マップ作成完了時の処理。マップが有効ならファイルへ保存し、完了通知を行います。
+    /// </summary>
     private void OnDeviceMapFinalized(ARDeviceMap map)
     {
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;

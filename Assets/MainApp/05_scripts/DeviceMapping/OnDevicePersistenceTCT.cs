@@ -4,6 +4,12 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
+
+/// <summary>
+/// OnDevicePersistenceTCT
+/// このクラスは、アプリのUI制御・マップ作成/保存/ロード・オブジェクト配置・状態管理などを統括します。
+/// ユーザー操作に応じて各種メニューやARマップ・オブジェクトの状態を切り替えます。
+/// </summary>
 public class OnDevicePersistenceTCT : MonoBehaviour
 {
     [Header("Managers")]
@@ -59,6 +65,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     public static string k_objectsFileName = "ADHocObjectsFile";
     
     /// <summary>
+    /// Start()
     /// アプリ起動時にメインメニューをセットアップする
     /// </summary>
     void Start()
@@ -67,6 +74,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Exit()
     /// メインメニューに戻る処理。全てのメニューを非表示にし、状態をリセットする
     /// </summary>
     private void Exit()
@@ -89,6 +97,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// ClearTrackingAndMappingState()
     /// マッピングやトラッキングの状態をクリアするコルーチン
     /// </summary>
     private IEnumerator ClearTrackingAndMappingState()
@@ -104,6 +113,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// CheckForSavedMap(string MapFileName)
     /// 指定したファイル名の保存済みマップが存在するか確認する
     /// </summary>
     private bool CheckForSavedMap(string MapFileName)
@@ -117,6 +127,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// SetUp_CreateMenu()
     /// メインメニュー（マップ作成/読み込み）をセットアップする
     /// </summary>
     private void SetUp_CreateMenu()
@@ -145,6 +156,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Teardown_CreateMenu()
     /// メインメニューのUIを非表示にし、リスナーを解除する
     /// </summary>
     private void Teardown_CreateMenu()
@@ -155,6 +167,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// SetUp_ScanMenu()
     /// マップスキャン用のメニューをセットアップする
     /// </summary>
     private void SetUp_ScanMenu()
@@ -169,6 +182,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Teardown_ScanningMenu()
     /// マップスキャン用のUIを非表示にし、リスナーを解除する
     /// </summary>
     private void Teardown_ScanningMenu()
@@ -181,6 +195,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// StartScanning()
     /// スキャン開始処理。マッピングを開始し、アニメーションを表示する
     /// </summary>
     private void StartScanning()
@@ -195,6 +210,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// MappingComplete(bool success)
     /// マッピング完了時の処理。成功時はローカライズへ、失敗時は再試行を促す
     /// </summary>
     private void MappingComplete(bool success)
@@ -218,6 +234,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
 
     /// <summary>
+    /// SetUp_LocalizeMenu()
     /// マップへのローカライズ用メニューをセットアップする
     /// </summary>
     private void SetUp_LocalizeMenu()
@@ -233,6 +250,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Teardown_LocalizeMenu()
     /// ローカライズ用UIを非表示にし、リスナーを解除する
     /// </summary>
     private void Teardown_LocalizeMenu()
@@ -242,6 +260,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Localized(bool localized)
     /// ローカライズ完了時の処理。成功時はゲームメニューへ、失敗時はメインメニューへ戻る
     /// </summary>
     private void Localized(bool localized)
@@ -262,6 +281,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
         }
     }
     /// <summary>
+    /// SetUp_InGameMenu()
     /// ゲーム内メニューをセットアップする
     /// </summary>
     private void SetUp_InGameMenu()
@@ -279,6 +299,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// Teardown_InGameMenu()
     /// ゲーム内メニューのUIを非表示にし、リスナーを解除する
     /// </summary>
     private void Teardown_InGameMenu()
@@ -290,6 +311,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
 
     /// <summary>
+    /// CreateAndPlaceCube(Vector3 localPos)
     /// 指定位置にキューブを生成し、アンカーの子として配置する
     /// </summary>
     private GameObject CreateAndPlaceCube(Vector3 localPos)
@@ -305,6 +327,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
 
     /// <summary>
+    /// PlaceCube()
     /// カメラ前方2mにキューブを配置し、その位置をファイルに保存する
     /// </summary>
     private void PlaceCube()
@@ -322,6 +345,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
 
     /// <summary>
+    /// LoadCubes()
     /// 保存ファイルからキューブの位置を読み込み、再配置する
     /// </summary>
     private void LoadCubes()
@@ -351,6 +375,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
     }
     
     /// <summary>
+    /// DeleteCubes()
     /// 配置済みキューブを全て削除し、ファイルも削除する
     /// </summary>
     private void DeleteCubes()

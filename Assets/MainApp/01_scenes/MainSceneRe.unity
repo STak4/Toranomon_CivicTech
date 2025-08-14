@@ -2055,7 +2055,7 @@ GameObject:
   - component: {fileID: 542294589}
   - component: {fileID: 542294592}
   m_Layer: 0
-  m_Name: CloudPersistenceManager
+  m_Name: DeviceMappingManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3367,7 +3367,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &901475044
 Transform:
   m_ObjectHideFlags: 0

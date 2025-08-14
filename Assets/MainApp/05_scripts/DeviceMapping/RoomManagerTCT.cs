@@ -6,34 +6,39 @@ using Niantic.Lightship.SharedAR.Datastore;
 using Niantic.Lightship.SharedAR.Rooms;
 using UnityEngine;
 
-//JS: lifted from samples
+/// <summary>
+/// RoomManagerTCT
+/// このクラスは、ネットワーク上のルーム（部屋）の作成・参加・退出・削除などを管理します。
+/// ルームの初期化後にネットワークやデータストアのイベントリスナーを設定できるようにします。
+/// </summary>
 public class RoomManagerTCT : MonoBehaviour
 {
     /// <summary>
-    /// Default Room description string
+    /// デフォルトのルーム説明文
     /// </summary>
     public string _roomDescription;
 
     /// <summary>
-    /// Default Room capacity
+    /// デフォルトのルーム収容人数
     /// </summary>
     [SerializeField]
     private int _roomCapacity = 10;
 
     /// <summary>
-    /// Room object. Can be null before CreateNewRoom() or JoinRoomById() is called
+    /// ルームオブジェクト。CreateNewRoom()またはJoinRoomById()呼び出し前はnull
     /// </summary>
     public IRoom Room { get; private set; }
 
     /// <summary>
-    /// An event when Room is initialized and Networking/Datastore objects are ready to set event listeners
+    /// ルーム初期化時のイベント。ネットワークやデータストアのリスナー設定に利用
     /// </summary>
     public event Action<IRoom> OnRoomInitialized;
 
     private readonly List<string> _roomIdsToDelete = new List<string>();
 
     /// <summary>
-    /// Create a new Room
+    /// CreateNewRoom(string roomName, bool deleteRoomOnQuit)
+    /// 新しいルームを作成します。deleteRoomOnQuitがtrueなら退出時にルームも削除します。
     /// </summary>
     /// <param name="roomName">Name of the Room to create. No need to be unique name.</param>
     /// <param name="deleteRoomOnQuit">Delete the room when quit or not</param>
@@ -66,7 +71,8 @@ public class RoomManagerTCT : MonoBehaviour
     }
 
     /// <summary>
-    /// Join a Room with Room ID
+    /// JoinRoomById(string roomId)
+    /// 指定したRoomIDのルームに参加します。
     /// </summary>
     /// <param name="roomId">Room ID string</param>
     public virtual void JoinRoomById(string roomId)
@@ -84,6 +90,11 @@ public class RoomManagerTCT : MonoBehaviour
         OnRoomInitialized?.Invoke(Room);
     }
     
+    /// <summary>
+    /// JoinRoomByName(string name)
+    /// 指定した名前のルームに参加（なければ作成）します。
+    /// </summary>
+    /// <param name="name">参加または作成するルームの名前</param>
     public virtual void JoinRoomByName(string name)
     {
         var roomParams = new RoomParams(
@@ -105,6 +116,10 @@ public class RoomManagerTCT : MonoBehaviour
         OnRoomInitialized?.Invoke(Room);
     }
 
+    /// <summary>
+    /// LeaveRoom()
+    /// ルームから退出し、必要に応じてルームを削除します。
+    /// </summary>
     public void LeaveRoom()
     {
         // No guarantee that network requests will succeed before shutdown
@@ -127,14 +142,18 @@ public class RoomManagerTCT : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// OnDestroy()
+    /// オブジェクト破棄時にルームから退出します。
+    /// </summary>
     protected void OnDestroy()
     {
         LeaveRoom();
     }
     
     /// <summary>
-    /// Transport specific logic after Room initialization
-    /// No implementation for this class
+    /// PostRoomInitialization()
+    /// ルーム初期化後の追加処理（このクラスでは未実装）
     /// </summary>
     protected virtual void PostRoomInitialization(){}
 }
