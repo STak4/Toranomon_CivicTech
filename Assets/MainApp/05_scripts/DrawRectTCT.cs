@@ -9,6 +9,8 @@ public class DrawRectTCT : MonoBehaviour
 {
     [SerializeField]
     private GameObject _rectanglePrefab;
+    [SerializeField]
+    private Transform _parentTransform;
 
     private List<UIRectObjectTCT> _rectangleObjects = new List<UIRectObjectTCT>();
     private List<int> _openIndices = new List<int>();
@@ -17,7 +19,7 @@ public class DrawRectTCT : MonoBehaviour
     {
         if (_openIndices.Count == 0)
         {
-            var newRect = Instantiate(_rectanglePrefab, parent: this.transform).GetComponent<UIRectObjectTCT>();
+            var newRect = Instantiate(_rectanglePrefab, parent: _parentTransform).GetComponent<UIRectObjectTCT>();
 
             _rectangleObjects.Add(newRect);
             _openIndices.Add(_rectangleObjects.Count - 1);
