@@ -118,7 +118,7 @@ public class DatastoreManagerTCT : MonoBehaviour
             }
             else
             {
-                Debug.Log($"Key:{args.Key} Data:{dataAsString}");
+                // Debug.Log($"Key:{args.Key} Data:{dataAsString}");
                 //do we already have this object?
                 if (_tracker.Anchor.Find(args.Key))
                 {
@@ -240,6 +240,7 @@ public class DatastoreManagerTCT : MonoBehaviour
         
         //turn it into bytes and send it datastore.
         string json = JsonUtility.ToJson(objectData);
+        Debug.Log($"json : {json}");
         _datastore.SetData(1, cubeName,Encoding.Unicode.GetBytes(json));
     }
     

@@ -85,18 +85,8 @@ public class CloudPersistenceTCT : MonoBehaviour
     // ロードデータをサーバーおよびローカルから削除するトリガーboolean
     private bool _clearOnLoad;
 
-    /// <summary>
-    /// Set up to main menu on start
-    /// </summary>
     void Start()
     {
-        //we want to use the datastore so turning off the local file save option
-
-        //■■■■　START　設定のコメントアウト　■■■■
-        // _tracker._loadFromFile = false;
-        // _mapper._saveToFile = false;
-        //■■■■　END　■■■■
-
         SetUp_CreateMenu();
     }
 

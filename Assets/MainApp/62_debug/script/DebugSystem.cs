@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.VisualScripting;
+using WorldPoseSamples;
+
+
 
 #if UNITY_ANDROID
 using UnityEngine.Android;
@@ -56,6 +60,15 @@ public class DebugSystem : MonoBehaviour
     private static bool startMinFpsCheck;
     private static List<float> fpsAverage = new List<float>();
     private static List<float> fpsLongAverage = new List<float>();
+
+
+    // 各種追加参照
+    [SerializeField] private TrackerTCT _trackerTCT;
+    private static TrackerTCT trackerTCT => Instance ? Instance._trackerTCT : null;
+    [SerializeField] private MapperTCT _mapperTCT;
+    private static MapperTCT mapperTCT => Instance ? Instance._mapperTCT : null;
+    [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
+    private static CompassWorldPoseTCT compassWorldPoseTCT => Instance ? Instance._compassWorldPoseTCT : null;
 
     private void Awake()
     {
@@ -224,10 +237,20 @@ public class DebugSystem : MonoBehaviour
         returnStr +=
             $"Date and Time : {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")} \n" +
             $"Touch Count : {Input.touchCount}\n" +
-            $"CURRENT FPS : {fps:F2} \n" +
-            $"CU.Long FPS : {fpsLong:F2} \n" +
-            $"MIN FPS CU. : {minFpsCurrent:F2} \n" +
-            $"MIN FPS APP : {minFpsOnApp:F2} \n" +
+            $"\n" +
+            $"Tracking state : {trackerTCT.GetTrackingState()}\n" +
+            $"Has valid map : {mapperTCT.GetMap().HasValidMap()}\n" +
+            $"Mapping Node Count : {mapperTCT.GetMap().DeviceMapNodes.Count}\n" +
+            $"\n" +
+            $"Camera local position : {Camera.main.transform.localPosition}\n" +
+            $"Camera local euler angles : {Camera.main.transform.localEulerAngles}\n" +
+            $"Compass Heading : {compassWorldPoseTCT.CameraHelper.TrueHeading}\n" +
+            $"Compass Latitude : {compassWorldPoseTCT.CameraHelper.Latitude}\n" +
+            $"Compass Longitude : {compassWorldPoseTCT.CameraHelper.Longitude}\n" +
+            // $"CURRENT FPS : {fps:F2} \n" +
+            // $"CU.Long FPS : {fpsLong:F2} \n" +
+            // $"MIN FPS CU. : {minFpsCurrent:F2} \n" +
+            // $"MIN FPS APP : {minFpsOnApp:F2} \n" +
             $"\n" +
             $"Log : \n" +
             $"\n";

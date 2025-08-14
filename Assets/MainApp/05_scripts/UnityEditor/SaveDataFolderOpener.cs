@@ -1,6 +1,8 @@
 using System.IO;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 public class SaveDataFolderOpener
 {
 #if UNITY_EDITOR    

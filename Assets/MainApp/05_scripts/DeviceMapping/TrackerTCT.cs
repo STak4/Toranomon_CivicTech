@@ -24,13 +24,13 @@ public class TrackerTCT : MonoBehaviour
 
     // ファイルからマップデータを読み込むかどうか
     public bool _loadFromFile = true;
-    
+
     // トラッキング成功時に通知されるイベント
     public Action<bool> _tracking;
-    
+
     // マップデータ
     private ARDeviceMap _deviceMap;
-    
+
     // ローカライズ前にオブジェクトを一時的に保持するアンカー
     GameObject _tempAnchor;
 
@@ -42,13 +42,13 @@ public class TrackerTCT : MonoBehaviour
         get
         {
             //if we are localised return the anchor
-            if(_anchor) return _anchor.transform;
+            if (_anchor) return _anchor.transform;
             //if we are not yet localised return a temp root.
-            else if(!_tempAnchor) { _tempAnchor = new GameObject("TemporaryAnchor"); }
+            else if (!_tempAnchor) { _tempAnchor = new GameObject("TemporaryAnchor"); }
             return _tempAnchor.transform;
         }
     }
-    
+
     private void Update()
     {
         // Update(): ローカライズが完了した場合、一時アンカーに紐付いていたオブジェクトを本アンカーに移動します。
@@ -57,7 +57,7 @@ public class TrackerTCT : MonoBehaviour
             for (int i = 0; i < _tempAnchor.transform.childCount; i++)
                 _tempAnchor.transform.GetChild(i).SetParent(_anchor.transform, false);
     }
-    
+
     private void Start()
     {
         // Start(): ARPersistentAnchorManagerの各種設定を行い、サブシステムを再起動します。
@@ -79,7 +79,7 @@ public class TrackerTCT : MonoBehaviour
         // アセットでの下記アクションへの紐づきはメニュー表示程度で動作に大きな影響なし。
         if (args.arPersistentAnchor.trackingState == TrackingState.Tracking) _tracking?.Invoke(true);
     }
-    
+
     /// <summary>
     /// StartTracking(): トラッキング開始。必要ならファイルからマップデータを読み込み、トラッキング用コルーチンを開始します。
     /// ◆◆◆実行動作の核のRestartTrackingDataStore()を呼び出すFunction◆◆◆
@@ -91,7 +91,7 @@ public class TrackerTCT : MonoBehaviour
         // ■■■■　下記動作に待ちを入れたので、必要に応じてクリアをしたほうが良い。　■■■■
         StartCoroutine(RestartTrackingDataStore());
     }
-    
+
     /// <summary>
     /// StopAndDestroyAnchor(): トラッキング停止とアンカーの破棄。イベント購読も解除します。
     /// ◆◆主にシーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
@@ -115,12 +115,12 @@ public class TrackerTCT : MonoBehaviour
         StopAndDestroyAnchor();
         _deviceMappingManager.DeviceMapAccessController.ClearDeviceMap();
     }
-    
+
     /// <summary>
     /// LoadMap(byte[] serializedDeviceMap): 渡されたバイト配列からマップデータを復元します。
     /// ◆◆引数に入れるバイト配列は.datの一式で良さそう◆◆
     /// </summary>
-    public void LoadMap(byte [] serializedDeviceMap)
+    public void LoadMap(byte[] serializedDeviceMap)
     {
         _deviceMap = ARDeviceMap.CreateFromSerializedData(serializedDeviceMap);
     }
@@ -145,7 +145,7 @@ public class TrackerTCT : MonoBehaviour
         yield return null;
 
         _persistentAnchorManager.enabled = true;
-        
+
         Debug.Log("== Setting device map. ==");
         // Set the device map to mapping manager
         _deviceMappingManager.SetDeviceMap(_deviceMap);
@@ -156,7 +156,7 @@ public class TrackerTCT : MonoBehaviour
         _persistentAnchorManager.TryTrackAnchor(
             new ARPersistentAnchorPayload(_deviceMap.GetAnchorPayload()),
             out _anchor);
-        while (!_anchor && _anchor.trackingState != TrackingState.Tracking)
+        while (!_anchor || _anchor.trackingState != TrackingState.Tracking)
         {
             Debug.Log("== Waiting for anchor... ==");
             yield return new WaitForSeconds(1);
@@ -180,6 +180,11 @@ public class TrackerTCT : MonoBehaviour
     public void AddObjectToAnchor(GameObject go)
     {
         go.transform.SetParent(Anchor.transform);
+    }
+    
+    public TrackingState GetTrackingState()
+    {
+        return _anchor ? _anchor.trackingState : TrackingState.None;
     }
 
 }

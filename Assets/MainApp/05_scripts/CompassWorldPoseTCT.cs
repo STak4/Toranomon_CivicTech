@@ -15,6 +15,7 @@ namespace WorldPoseSamples
         [SerializeField] private UnityEngine.UI.Text _coordinatesText;
 
         private ARWorldPositioningCameraHelper _cameraHelper;
+        public ARWorldPositioningCameraHelper CameraHelper => _cameraHelper;
                         
         public void Start()
         {

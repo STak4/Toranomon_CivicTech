@@ -340,6 +340,7 @@ public class OnDevicePersistenceTCT : MonoBehaviour
       
         using (StreamWriter sw = File.AppendText(path))
         {
+            Debug.Log($"Saving Cube Position: {go.transform.localPosition} at {path}");
             sw.WriteLine(go.transform.localPosition);
         }
     }

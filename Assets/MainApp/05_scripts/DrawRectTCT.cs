@@ -28,12 +28,14 @@ public class DrawRectTCT : MonoBehaviour
         // Treat the first index as a queue
         int index = _openIndices[0];
         _openIndices.RemoveAt(0);
-        
-        UIRectObjectTCT rectangle = _rectangleObjects[index];
-        rectangle.SetRectTransform(rect);
-        rectangle.SetColor(color);
-        rectangle.SetText(text);
-        rectangle.gameObject.SetActive(true);
+        if(_parentTransform.gameObject.activeInHierarchy)
+        {
+            UIRectObjectTCT rectangle = _rectangleObjects[index];
+            rectangle.SetRectTransform(rect);
+            rectangle.SetColor(color);
+            rectangle.SetText(text);
+            rectangle.gameObject.SetActive(true);
+        }       
     }
 
     public void ClearRects()
