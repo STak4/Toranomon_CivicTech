@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAyltMHCO1g5EdbVza5vAmsRVa5k7GR_r8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>654664809716</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.toranomonCivictech</string>
+	<key>PROJECT_ID</key>
+	<string>toranomon-civictech</string>
+	<key>STORAGE_BUCKET</key>
+	<string>toranomon-civictech.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:654664809716:ios:c704d926745f1507ccf2a1</string>
+</dict>
+</plist>

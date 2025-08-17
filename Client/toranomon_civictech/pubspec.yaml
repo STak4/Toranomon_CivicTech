@@ -1,5 +1,5 @@
 name: toranomon_civictech
-description: "A new Flutter project."
+description: "CivicTech App for TNXR Hackathon."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 0.0.2+1
 
 environment:
   sdk: ^3.8.1
@@ -31,17 +31,40 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  # バージョンを固定した方が良いもの（変更のインパクトが大きいもの）
+  go_router: ^16.1.0
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.3.5
 
+  # Flutter Basics
+  cupertino_icons:
+  flutter_dotenv:
+  logger:
+  crypto:
+
+  # Firebase dependencies
+  firebase_core:
+  firebase_auth:
+  firebase_analytics:
+  firebase_crashlytics:
+  firebase_messaging:
+  firebase_storage:
+  cloud_firestore:
+  firebase_remote_config:
+
+  # Social Authentication
+  google_sign_in:
+  sign_in_with_apple:
+
+  # その他
+  supabase:
+  supabase_flutter:
   flutter_unity_widget:
     git:
       url: https://github.com/juicycleff/flutter-unity-view-widget.git
       ref: experimental/unity_6000
-  supabase: ^2.8.0
-  supabase_flutter: ^2.9.1
-  flutter_dotenv: ^5.2.1
+
+
 
 dev_dependencies:
   flutter_test:
@@ -52,7 +75,9 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+  build_runner: ^2.5.4
+  riverpod_generator: ^2.6.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -64,3 +89,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/images/
