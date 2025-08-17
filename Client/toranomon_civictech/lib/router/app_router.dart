@@ -9,6 +9,7 @@ import '../screens/social_signin_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/unity_demo_screen.dart';
 import '../screens/map_screen.dart';
+import '../utils/app_logger.dart';
 
 class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this.ref) {
@@ -25,12 +26,20 @@ class RouterNotifier extends ChangeNotifier {
     final user = ref.read(authStateWithRefreshProvider).asData?.value;
     final loggingIn = state.matchedLocation == '/signin';
 
+    AppLogger.d(
+      'Router - Checking auth state: user=${user?.uid != null ? "signed_in" : "not_signed_in"}, location=${state.matchedLocation}',
+    );
+
     if (user == null && !loggingIn) {
+      AppLogger.d('Router - Redirecting to signin page (user not signed in)');
       return '/signin'; // 未サインインはログインへ
     }
     if (user != null && loggingIn) {
+      AppLogger.d('Router - Redirecting to home page (user already signed in)');
       return '/'; // サインイン済みが /signin に来たらトップへ
     }
+
+    AppLogger.d('Router - No redirect needed');
     return null;
   }
 

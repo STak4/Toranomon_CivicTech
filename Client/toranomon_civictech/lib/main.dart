@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'router/app_router.dart';
+import 'utils/app_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppLogger.d('App - Starting application initialization');
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  AppLogger.d('App - Firebase initialized successfully');
+
+  AppLogger.d('App - Launching application');
   runApp(const ProviderScope(child: App()));
 }
 

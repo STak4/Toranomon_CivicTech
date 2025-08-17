@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import '../utils/app_logger.dart';
 
 class MapScreen extends StatelessWidget {
   const MapScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 画面表示時のログ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppLogger.d('Screen - Map screen displayed');
+    });
     return Scaffold(
       appBar: AppBar(
         title: const Text('地図'),

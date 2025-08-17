@@ -103,44 +103,71 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    AppLogger.d('Auth - Starting sign out process');
+
     // 先にFirebaseをサインアウト
     await _auth.signOut();
+    AppLogger.d('Auth - Firebase sign out completed');
+
     // Google側のセッションも切りたい場合（モバイルのみ推奨）
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       final googleSignIn = GoogleSignIn();
       await googleSignIn.signOut();
+      AppLogger.d('Auth - Google Sign-In session cleared');
     }
+
+    AppLogger.d('Auth - Sign out completed successfully');
   }
 
   /// 表示名を更新
   Future<void> updateDisplayName(String displayName) async {
+    AppLogger.d('Auth - Starting display name update: $displayName');
+
     final user = _auth.currentUser;
-    if (user == null) throw Exception('No signed-in user');
+    if (user == null) {
+      AppLogger.d('Auth - No signed-in user found for display name update');
+      throw Exception('No signed-in user');
+    }
 
     // Firebase Authの表示名を更新
     await user.updateDisplayName(displayName);
     await user.reload();
+    AppLogger.d('Auth - Display name updated successfully');
   }
 
   /// アカウント削除（再認証込み）
   Future<void> deleteAccountWithReauth() async {
+    AppLogger.d('Auth - Starting account deletion process');
+
     final user = _auth.currentUser;
-    if (user == null) throw Exception('No signed-in user');
+    if (user == null) {
+      AppLogger.d('Auth - No signed-in user found for account deletion');
+      throw Exception('No signed-in user');
+    }
 
     try {
       await user.delete();
+      AppLogger.d('Auth - Account deleted successfully without reauth');
       return; // 再認証不要で消せたケース
     } on FirebaseAuthException catch (e) {
-      if (e.code != 'requires-recent-login') rethrow;
+      if (e.code != 'requires-recent-login') {
+        AppLogger.d('Auth - Account deletion failed with error: ${e.code}');
+        rethrow;
+      }
+
+      AppLogger.d('Auth - Re-authentication required for account deletion');
       // 再認証が必要
       if (kIsWeb) {
+        AppLogger.d('Auth - Using Google re-auth for web');
         final provider = GoogleAuthProvider();
         await user.reauthenticateWithPopup(provider);
       } else {
         // ユーザーのプロバイダーに応じて再認証方法を選択
         final providers = user.providerData.map((p) => p.providerId).toList();
+        AppLogger.d('Auth - User providers: $providers');
 
         if (providers.contains('apple.com')) {
+          AppLogger.d('Auth - Using Apple re-auth');
           // Appleで再認証
           final appleCredential = await SignInWithApple.getAppleIDCredential(
             scopes: [
@@ -154,10 +181,14 @@ class AuthRepository {
           );
           await user.reauthenticateWithCredential(oauthCredential);
         } else {
+          AppLogger.d('Auth - Using Google re-auth');
           // Googleで再認証（デフォルト）
           final googleSignIn = GoogleSignIn();
           final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-          if (googleUser == null) throw Exception('Re-auth cancelled');
+          if (googleUser == null) {
+            AppLogger.d('Auth - Re-auth cancelled by user');
+            throw Exception('Re-auth cancelled');
+          }
           final GoogleSignInAuthentication googleAuth =
               await googleUser.authentication;
           final AuthCredential credential = GoogleAuthProvider.credential(
@@ -167,8 +198,13 @@ class AuthRepository {
           await user.reauthenticateWithCredential(credential);
         }
       }
+
+      AppLogger.d(
+        'Auth - Re-authentication completed, retrying account deletion',
+      );
       // 再試行
       await user.delete();
+      AppLogger.d('Auth - Account deleted successfully after reauth');
     }
   }
 }

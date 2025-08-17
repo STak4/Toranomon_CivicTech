@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "654664809716",
+    "project_id": "toranomon-civictech",
+    "storage_bucket": "toranomon-civictech.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:654664809716:android:2faa90397f0909fcccf2a1",
+        "android_client_info": {
+          "package_name": "com.toranomon.civictech"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "654664809716-s1g89ps44gqqr02jnqpc84le616linv2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-N_xe_FJ5jgy0-owXTeEtRnVOPA7OV1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "654664809716-s1g89ps44gqqr02jnqpc84le616linv2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "654664809716-r5e2tus0t9257vl4cudgiquaka7gbs1j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.toranomon.civictech"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

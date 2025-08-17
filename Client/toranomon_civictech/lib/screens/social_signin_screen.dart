@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
+import '../utils/app_logger.dart';
 
 class SocialSigninScreen extends ConsumerStatefulWidget {
   const SocialSigninScreen({super.key});
@@ -15,6 +16,11 @@ class _SocialSigninScreenState extends ConsumerState<SocialSigninScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = ref.watch(authRepositoryProvider);
+
+    // 画面表示時のログ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppLogger.d('Screen - Sign-in screen displayed');
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -57,9 +63,13 @@ class _SocialSigninScreenState extends ConsumerState<SocialSigninScreen> {
                           ),
                         ),
                         onPressed: () async {
+                          AppLogger.d('Action - User initiated Google Sign-In');
                           setState(() => _loading = true);
                           try {
                             await repo.signInWithGoogle();
+                            AppLogger.d(
+                              'Action - Google Sign-In completed successfully',
+                            );
                             // 強制的にauthStateProviderを無効化して再読込
                             ref.invalidate(authStateWithRefreshProvider);
                             if (context.mounted) {
@@ -68,6 +78,7 @@ class _SocialSigninScreenState extends ConsumerState<SocialSigninScreen> {
                               );
                             }
                           } catch (e) {
+                            AppLogger.d('Action - Google Sign-In failed: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('サインイン失敗: $e')),
@@ -104,9 +115,13 @@ class _SocialSigninScreenState extends ConsumerState<SocialSigninScreen> {
                           ),
                         ),
                         onPressed: () async {
+                          AppLogger.d('Action - User initiated Apple Sign-In');
                           setState(() => _loading = true);
                           try {
                             await repo.signInWithApple();
+                            AppLogger.d(
+                              'Action - Apple Sign-In completed successfully',
+                            );
                             // 強制的にauthStateProviderを無効化して再読込
                             ref.invalidate(authStateWithRefreshProvider);
                             if (context.mounted) {
@@ -115,6 +130,7 @@ class _SocialSigninScreenState extends ConsumerState<SocialSigninScreen> {
                               );
                             }
                           } catch (e) {
+                            AppLogger.d('Action - Apple Sign-In failed: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('サインイン失敗: $e')),

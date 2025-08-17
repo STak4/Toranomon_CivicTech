@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth/auth_providers.dart';
 import '../auth/auth_repository.dart';
+import '../utils/app_logger.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -16,6 +17,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateWithRefreshProvider);
     final repo = ref.watch(authRepositoryProvider);
+
+    // 画面表示時のログ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      authState.whenData((user) {
+        AppLogger.d(
+          'Screen - Profile screen displayed for user: ${user?.uid ?? "not_signed_in"}',
+        );
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -110,9 +120,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
 
                       if (shouldSignOut == true) {
+                        AppLogger.d(
+                          'Action - User initiated sign out from profile screen',
+                        );
                         try {
                           await repo.signOut();
+                          AppLogger.d(
+                            'Action - Sign out completed successfully from profile',
+                          );
                         } catch (e) {
+                          AppLogger.d(
+                            'Action - Sign out failed from profile: $e',
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('サインアウトに失敗しました: $e')),
@@ -165,14 +184,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       if (ok != true) return;
 
+                      AppLogger.d(
+                        'Action - User initiated account deletion from profile screen',
+                      );
                       try {
                         await repo.deleteAccountWithReauth();
+                        AppLogger.d(
+                          'Action - Account deletion completed successfully',
+                        );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('アカウントを削除しました')),
                           );
                         }
                       } catch (e) {
+                        AppLogger.d('Action - Account deletion failed: $e');
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('削除に失敗しました: $e')),
@@ -221,8 +247,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               final newName = nameController.text.trim();
               if (newName.isNotEmpty) {
+                AppLogger.d('Action - User updating display name to: $newName');
                 try {
                   await repo.updateDisplayName(newName);
+                  AppLogger.d('Action - Display name updated successfully');
                   if (context.mounted) {
                     Navigator.of(context).pop();
                     // 強制的にauthStateProviderを無効化して再読込
@@ -232,6 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ).showSnackBar(const SnackBar(content: Text('名前を更新しました')));
                   }
                 } catch (e) {
+                  AppLogger.d('Action - Display name update failed: $e');
                   if (context.mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(

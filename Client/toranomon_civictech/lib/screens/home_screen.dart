@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../auth/auth_providers.dart';
+import '../utils/app_logger.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -11,6 +12,15 @@ class HomeScreen extends ConsumerWidget {
     final authState = ref.watch(authStateWithRefreshProvider);
     final repo = ref.watch(authRepositoryProvider);
 
+    // 画面表示時のログ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      authState.whenData((user) {
+        AppLogger.d(
+          'Screen - Home screen displayed for user: ${user?.uid ?? "not_signed_in"}',
+        );
+      });
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ホーム'),
@@ -18,9 +28,12 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
+              AppLogger.d('Action - User initiated sign out from home screen');
               try {
                 await repo.signOut();
+                AppLogger.d('Action - Sign out completed successfully');
               } catch (e) {
+                AppLogger.d('Action - Sign out failed: $e');
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
@@ -81,21 +94,36 @@ class HomeScreen extends ConsumerWidget {
                         'プロフィール',
                         Icons.person,
                         Colors.blue,
-                        () => context.goNamed('profile'),
+                        () {
+                          AppLogger.d(
+                            'Navigation - User navigated to profile screen',
+                          );
+                          context.goNamed('profile');
+                        },
                       ),
                       _buildMenuCard(
                         context,
                         'Unity起動',
                         Icons.games,
                         Colors.green,
-                        () => context.goNamed('unity'),
+                        () {
+                          AppLogger.d(
+                            'Navigation - User navigated to Unity screen',
+                          );
+                          context.goNamed('unity');
+                        },
                       ),
                       _buildMenuCard(
                         context,
                         '地図',
                         Icons.map,
                         Colors.orange,
-                        () => context.goNamed('map'),
+                        () {
+                          AppLogger.d(
+                            'Navigation - User navigated to map screen',
+                          );
+                          context.goNamed('map');
+                        },
                       ),
                       _buildMenuCard(
                         context,

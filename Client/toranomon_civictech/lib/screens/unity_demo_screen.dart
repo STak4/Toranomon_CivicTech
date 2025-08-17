@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_logger.dart';
 import 'package:flutter_unity_widget/flutter_unity_widget.dart';
 
 class UnityDemoScreen extends StatefulWidget {
@@ -13,6 +14,10 @@ class _UnityDemoScreenState extends State<UnityDemoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 画面表示時のログ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppLogger.d('Screen - Unity demo screen displayed');
+    });
     return Scaffold(
       appBar: AppBar(title: const Text('Unity Demo')),
       body: Container(
