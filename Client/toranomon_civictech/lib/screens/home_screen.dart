@@ -88,6 +88,7 @@ class HomeScreen extends ConsumerWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
+                    childAspectRatio: 1.0,
                     children: [
                       _buildMenuCard(
                         context,
@@ -123,6 +124,18 @@ class HomeScreen extends ConsumerWidget {
                             'Navigation - User navigated to map screen',
                           );
                           context.goNamed('map');
+                        },
+                      ),
+                      _buildMenuCard(
+                        context,
+                        'カメラ',
+                        Icons.camera_alt,
+                        Colors.purple,
+                        () {
+                          AppLogger.d(
+                            'Navigation - User navigated to camera screen',
+                          );
+                          context.goNamed('camera');
                         },
                       ),
                       _buildMenuCard(

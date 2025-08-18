@@ -9,6 +9,7 @@ import '../screens/social_signin_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/unity_demo_screen.dart';
 import '../screens/map_screen.dart';
+import '../screens/camera_capture.dart';
 import '../utils/app_logger.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -76,6 +77,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'map',
             name: 'map',
             builder: (context, state) => const MapScreen(),
+          ),
+          GoRoute(
+            path: 'camera',
+            name: 'camera',
+            builder: (context, state) => const CameraCaptureScreen(),
           ),
         ],
       ),
