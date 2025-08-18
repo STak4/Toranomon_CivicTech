@@ -1,3 +1,27 @@
+// android/app/build.gradle.kts
+import java.util.Properties
+
+// 1) ルートの .env を読み込むユーティリティ
+fun loadDotEnv(): Properties {
+    val props = Properties()
+    val f = rootProject.file(".env")
+    if (f.exists()) {
+        f.inputStream().use { props.load(it) } // KEY=VALUE を読み込み
+    }
+    return props
+}
+
+// 2) Gradle プロパティ or .env の順で解決するヘルパ
+fun resolveSecret(key: String, env: Properties): String {
+    // ./gradlew -PKEY=... や gradle.properties の優先
+    val fromGradle = findProperty(key)?.toString()
+        ?: providers.gradleProperty(key).orNull
+    return (fromGradle ?: env.getProperty(key, "")).trim()
+}
+
+val envProps = loadDotEnv()
+val googleMapsKeyAndroid = resolveSecret("GOOGLE_MAPS_KEY_ANDROID", envProps)
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -12,7 +36,7 @@ plugins {
 android {
     namespace = "com.toranomon.civictech"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.2.12479018"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -28,10 +52,13 @@ android {
         applicationId = "com.toranomon.civictech"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 30
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // ★ Manifest の ${GOOGLE_MAPS_API_KEY} に注入
+        manifestPlaceholders["GOOGLE_MAPS_KEY"] = googleMapsKeyAndroid
     }
 
     buildTypes {
