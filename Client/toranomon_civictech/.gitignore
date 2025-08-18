@@ -50,3 +50,9 @@ app.*.map.json
 # Unity Build binaries
 /ios/UnityLibrary/
 /android/unityLibrary/
+
+# iOS generated file
+Config/
+
+# env
+.env
