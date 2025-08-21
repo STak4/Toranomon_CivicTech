@@ -140,6 +140,18 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       _buildMenuCard(
                         context,
+                        'Leonardo AI',
+                        Icons.auto_awesome,
+                        Colors.deepPurple,
+                        () {
+                          AppLogger.d(
+                            'Navigation - User navigated to Leonardo AI screen',
+                          );
+                          context.goNamed('leonardo-ai');
+                        },
+                      ),
+                      _buildMenuCard(
+                        context,
                         '設定',
                         Icons.settings,
                         Colors.grey,
