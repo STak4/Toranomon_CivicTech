@@ -14,6 +14,10 @@ public class DebugButton : MonoBehaviour
     private static Button debug_ShowHideB => Instance?._debug_ShowHideB;
     [SerializeField] private Button _debug_ShowHideC;
     private static Button debug_ShowHideC => Instance?._debug_ShowHideC;
+    [SerializeField] private Button _debug_ShowHideD;
+    private static Button debug_ShowHideD => Instance?._debug_ShowHideD;
+    [SerializeField] private Button _debug_ShowHideE;
+    private static Button debug_ShowHideE => Instance?._debug_ShowHideE;
 
     [SerializeField] private GameObject _showHideA;
     private static GameObject showHideA => Instance?._showHideA;
@@ -21,6 +25,10 @@ public class DebugButton : MonoBehaviour
     private static GameObject showHideB => Instance?._showHideB;
     [SerializeField] private GameObject _showHideC;
     private static GameObject showHideC => Instance?._showHideC;
+    [SerializeField] private GameObject _showHideD;
+    private static GameObject showHideD => Instance?._showHideD;
+    [SerializeField] private GameObject _showHideE;
+    private static GameObject showHideE => Instance?._showHideE;
 
     private void Awake()
     {
@@ -28,9 +36,16 @@ public class DebugButton : MonoBehaviour
         else Destroy(this);
 
         debug_OnOff.onClick.AddListener(() => TriggerDebugOnOffAction());
-        debug_ShowHideA.onClick.AddListener(() => TriggerDebugShowHideAAction());
-        debug_ShowHideB.onClick.AddListener(() => TriggerDebugShowHideBAction());
-        debug_ShowHideC.onClick.AddListener(() => TriggerDebugShowHideCAction());
+        debug_ShowHideA.onClick.AddListener(() => TriggerDebugShowHideAction(debug_ShowHideA, showHideA));
+        debug_ShowHideB.onClick.AddListener(() => TriggerDebugShowHideAction(debug_ShowHideB, showHideB));
+        debug_ShowHideC.onClick.AddListener(() => TriggerDebugShowHideAction(debug_ShowHideC, showHideC));
+        debug_ShowHideD.onClick.AddListener(() => TriggerDebugShowHideAction(debug_ShowHideD, showHideD));
+        debug_ShowHideE.onClick.AddListener(() => TriggerDebugShowHideAction(debug_ShowHideE, showHideE));
+        debug_ShowHideA.gameObject.SetActive(false);
+        debug_ShowHideB.gameObject.SetActive(false);
+        debug_ShowHideC.gameObject.SetActive(false);
+        debug_ShowHideD.gameObject.SetActive(false);
+        debug_ShowHideE.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -38,17 +53,8 @@ public class DebugButton : MonoBehaviour
         if (Input.touchCount == 3)
         {
             bool taped = false;
-            foreach(Touch touch in Input.touches)
-            {
-                if(touch.phase == TouchPhase.Ended)
-                {
-                    taped = true;
-                }
-            }
-            if (taped)
-            {
-                TriggerDebugOnOffAction();
-            }
+            foreach(Touch touch in Input.touches) if(touch.phase == TouchPhase.Ended) taped = true;
+            if (taped) TriggerDebugOnOffAction();
         }
     }
     public static void TriggerDebugOnOffAction()
@@ -56,39 +62,27 @@ public class DebugButton : MonoBehaviour
         Debug.Log("Debug on-off tapped.");
         if(DebugSystem.debugLogs.gameObject != null)
         {
-            if (DebugSystem.debugLogs.gameObject.activeSelf) { DebugSystem.debugLogs.gameObject.SetActive(false); }
-            else { DebugSystem.debugLogs.gameObject.SetActive(true); }
+            bool showCondition = DebugSystem.debugLogs.gameObject.activeSelf;
+            DebugSystem.debugLogs.gameObject.SetActive(!showCondition);
+            debug_ShowHideA.gameObject.SetActive(!showCondition);
+            debug_ShowHideB.gameObject.SetActive(!showCondition);
+            debug_ShowHideC.gameObject.SetActive(!showCondition);
+            debug_ShowHideD.gameObject.SetActive(!showCondition);
+            debug_ShowHideE.gameObject.SetActive(!showCondition);
         }
     }
 
-    public static void TriggerDebugShowHideAAction()
+    public static void TriggerDebugShowHideAction(Button button, GameObject obj)
     {
-        Debug.Log("Debug show hide A tapped.");
-        if(showHideA != null)
+        if(obj != null)
         {
-            if (showHideA.activeSelf) { showHideA.SetActive(false); }
-            else { showHideA.SetActive(true); }
+            Debug.Log($"Debug button {button.name} tapped for {obj.name} {(obj.activeSelf ? "hiding" : "showing")}");
+            if (obj.activeSelf) { obj.SetActive(false); }
+            else { obj.SetActive(true); }
+        }
+        else
+        {
+            Debug.LogWarning("Debug show hide tapped, but object is null");
         }
     }
-    public static void TriggerDebugShowHideBAction()
-    {
-        Debug.Log("Debug show hide B tapped.");
-        if(showHideB != null)
-        {
-            if (showHideB.activeSelf) { showHideB.SetActive(false); }
-            else { showHideB.SetActive(true); }
-        }
-    }
-    public static void TriggerDebugShowHideCAction()
-    {
-        Debug.Log("Debug show hide C tapped.");
-        if(showHideC != null)
-        {
-            if (showHideC.activeSelf) { showHideC.SetActive(false); }
-            else { showHideC.SetActive(true); }
-        }
-    }
-
-
-
 }
