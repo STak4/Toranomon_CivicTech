@@ -103,3 +103,6 @@ InitTestScene*.unity*
 /[Aa]ssets/01_Kuwabara/05_scripts/*/obj*
 /[Aa]ssets/01_Kuwabara/05_scripts/bin*
 /[Aa]ssets/01_Kuwabara/05_scripts/obj*
+
+# exclude light ship setting
+/[Aa]ssets/XR/Settings/Lightship Settings.asset
