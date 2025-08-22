@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/MainApp/01_scenes/MainSceneRe.unity
     guid: 9099efc4d0fbd014fb2d263c7b8b686b
   m_configObjects:
-    Niantic.Lightship.AR.LightshipSettings: {fileID: 11400000, guid: e3c27056a5583a643a429e63e8d1149c, type: 2}
+    Niantic.Lightship.AR.LightshipSettings: {fileID: 11400000, guid: 0a4799c791bf7aa40a9036e3949e3382, type: 2}
     Niantic.Lightship.AR.WPSSettings: {fileID: 11400000, guid: ee6baa83fec89444b99181fc1ccffc2a, type: 2}
     Niantic.Lightship.AR.WorldPositioningSettings: {fileID: 11400000, guid: ee6baa83fec89444b99181fc1ccffc2a, type: 2}
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 0ba5772da672041b0b49b09b47e32b89, type: 2}

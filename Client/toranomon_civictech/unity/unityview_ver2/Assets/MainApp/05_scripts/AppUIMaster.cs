@@ -1,0 +1,385 @@
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UnityEngine.XR.ARFoundation;
+
+public class AppUIMaster : MonoBehaviour
+{
+    public AppConfig appConfig { get; set; } = new AppConfig();
+
+    [SerializeField] private ARCameraManager _arCameraManager;
+    [SerializeField] private ARCameraBackground _arCameraBackground;
+
+    [SerializeField] private GameObject _statusView;
+    [SerializeField] private TMP_Text _statusText;
+    [SerializeField] private GameObject _informationView;
+    [SerializeField] private TMP_Text _informationText;
+    [SerializeField] private GameObject _radarView;
+
+    [SerializeField] private Button _radarButton;
+    [SerializeField] private Button _trackingButton;
+    [SerializeField] private Button _arViewButton;
+    [SerializeField] private Button _mappingButton;
+    [SerializeField] private Button _photoShootButton;
+    [SerializeField] private Button _submitButton;
+
+    public void Initialize()
+    {
+        _radarButton.onClick.AddListener(() => TriggerRadarButtonAction());
+        _trackingButton.onClick.AddListener(async () => await TriggerTrackingButtonAction());
+        _arViewButton.onClick.AddListener(() => TriggerARViewButtonAction());
+
+        _mappingButton.onClick.AddListener(() => TriggerMappingButtonAction());
+        _photoShootButton.onClick.AddListener(() => TriggerPhotoShootButtonAction());
+        _submitButton.onClick.AddListener(() => TriggerSubmitButtonAction());
+
+        // 明示的な初期化(関数だと不整合をおこす可能性を考慮)
+        _arCameraBackground.enabled = false;
+        _arCameraManager.enabled = false;
+        _statusView.SetActive(false);
+        _informationView.SetActive(false);
+        _radarView.SetActive(false);
+
+        StatusOnOff(true);
+
+        ARViewOnOff(false);
+        InformationOnOff(false);
+        RadarOnOff(false);
+
+        appConfig.PhaseChangeAction += async (oldPhase, newPhase) =>
+        {
+            StatusChange(newPhase);
+            ButtonActiveChange(newPhase);
+            await ViewActiveChange(newPhase);
+        };
+    }
+
+    private void StatusChange(AppPhase newPhase)
+    {
+        _statusText.text = $"{newPhase.ToString().ToUpper()}";
+    }
+    private void InformationChange(string newInformation)
+    {
+        _informationText.text = $"{newInformation.ToString()}";
+    }
+    private void ButtonActiveChange(AppPhase newPhase)
+    {
+        switch (newPhase)
+        {
+            case AppPhase.Initialization:
+                _radarButton.interactable = false;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = false;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.Standby:
+                _radarButton.interactable = true;
+                if (appConfig.IsArView) _trackingButton.interactable = true;
+                else _trackingButton.interactable = false;
+                _arViewButton.interactable = true;
+                if (appConfig.IsArView) _mappingButton.interactable = true;
+                else _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.Mapping:
+                _radarButton.interactable = false;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = false;
+                _mappingButton.interactable = true;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.Mapped:
+                _radarButton.interactable = false;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = false;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = true;
+                _submitButton.interactable = false;
+                break;
+            case AppPhase.PhotoShot:
+                _radarButton.interactable = false;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = false;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = true;
+                break;
+
+            case AppPhase.Radar:
+                _radarButton.interactable = true;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = true;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.StandbyTracking:
+                _radarButton.interactable = true;
+                if (appConfig.IsArView) _trackingButton.interactable = true;
+                else _trackingButton.interactable = false;
+                _arViewButton.interactable = true;
+                if (appConfig.IsArView) _mappingButton.interactable = true;
+                else _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.Tracking:
+                _radarButton.interactable = false;
+                _trackingButton.interactable = true;
+                _arViewButton.interactable = false;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            case AppPhase.Tracked:
+                _radarButton.interactable = true;
+                if (appConfig.IsArView) _trackingButton.interactable = true;
+                else _trackingButton.interactable = false;
+                _arViewButton.interactable = true;
+                if (appConfig.IsArView) _mappingButton.interactable = true;
+                else _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
+            default:
+                break;
+        }
+    }
+    private async Task ViewActiveChange(AppPhase newPhase)
+    {
+        switch (newPhase)
+        {
+            case AppPhase.Initialization:
+                ARViewOnOff(false);
+                RadarOnOff(false);
+                InformationOnOff(false);
+                break;
+            case AppPhase.Standby:
+                RadarOnOff(true);
+                InformationOnOff(false);
+                break;
+            case AppPhase.Mapping:
+                ARViewOnOff(true);
+                RadarOnOff(false);
+                InformationOnOff(true);
+                InformationChange("Please see around for mapping...");
+                while(appConfig.GetAppPhase() == AppPhase.Mapping)
+                {
+                    await Task.Delay(1000);
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping) break;
+                    InformationOnOff(false);
+                    await Task.Delay(1000);
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping) break;
+                    InformationOnOff(true);
+                }
+                break;
+            case AppPhase.Mapped:
+                InformationOnOff(true);
+                InformationChange("Mapping done!");
+                await Task.Delay(500);
+                if(appConfig.GetAppPhase() == AppPhase.Mapped)
+                    InformationOnOff(false);
+                break;
+            case AppPhase.PhotoShot:
+                InformationOnOff(true);
+                InformationChange("Photo shoot done!");
+                await Task.Delay(500);
+                if(appConfig.GetAppPhase() == AppPhase.PhotoShot)
+                    InformationOnOff(false);
+                break;
+            case AppPhase.Radar:
+                RadarOnOff(true);
+                InformationOnOff(false);
+                break;
+            case AppPhase.StandbyTracking:
+                InformationOnOff(true);
+                InformationChange("Please start tracking.");
+                break;
+            case AppPhase.Tracking:
+                ARViewOnOff(true);
+                RadarOnOff(false);
+                InformationOnOff(true);
+                InformationChange("Please see around for tracking...");
+                while(appConfig.GetAppPhase() == AppPhase.Tracking)
+                {
+                    await Task.Delay(1000);
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking) break;
+                    InformationOnOff(false);
+                    await Task.Delay(1000);
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking) break;
+                    InformationOnOff(true);
+                }
+                break;
+            case AppPhase.Tracked:
+                InformationOnOff(true);
+                InformationChange("Tracking done!");
+                await Task.Delay(500);
+                if(appConfig.GetAppPhase() == AppPhase.Tracked)
+                    InformationOnOff(false);
+                break;
+            default:
+                break;
+        }                
+    }
+    private void StatusOnOff(bool activate)
+    {
+        bool isActive = _statusView.activeSelf;
+        if (!activate && isActive)
+        {
+            _statusView.SetActive(false);
+            appConfig.IsStatusView = false;
+        }
+        else if (activate && !isActive)
+        {
+            _statusView.SetActive(true);
+            appConfig.IsStatusView = true;
+        }
+    }
+    private void ARViewOnOff(bool activate)
+    {
+        bool isManagerActive = _arCameraManager.enabled;
+        bool isBackgroundActive = _arCameraBackground.enabled;
+        bool isActive = isManagerActive && isBackgroundActive;
+
+        if (!activate && isManagerActive)
+        {
+            _arCameraBackground.enabled = false;
+            _arCameraManager.enabled = false;
+            appConfig.IsArView = false;
+            ButtonActiveChange(appConfig.GetAppPhase());
+        }
+        else if (activate && !isActive)
+        {
+            _arCameraBackground.enabled = true;
+            _arCameraManager.enabled = true;
+            appConfig.IsArView = true;
+            ButtonActiveChange(appConfig.GetAppPhase());
+        }
+    }
+
+    private void RadarOnOff(bool activate)
+    {
+        bool isActive = _radarView.activeSelf;
+        if (!activate && isActive)
+        {
+            _radarView.SetActive(false);
+            appConfig.IsRadarView = false;
+        }
+        else if (activate && !isActive)
+        {
+            _radarView.SetActive(true);
+            appConfig.IsRadarView = true;
+        }
+    }
+
+    private void InformationOnOff(bool activate)
+    {
+        bool isActive = _informationView.activeSelf;
+        if (!activate && isActive)
+        {
+            _informationView.SetActive(false);
+            appConfig.IsInformationView = false;
+        }
+        else if (activate && !isActive)
+        {
+            _informationView.SetActive(true);
+            appConfig.IsInformationView = true;
+        }
+    }
+
+
+
+    private void TriggerRadarButtonAction()
+    {
+        bool isActive = _radarView.activeSelf;
+        RadarOnOff(!isActive);
+    }
+    private void TriggerARViewButtonAction()
+    {
+        bool isManagerActive = _arCameraManager.enabled;
+        bool isBackgroundActive = _arCameraBackground.enabled;
+        bool isActive = isManagerActive && isBackgroundActive;
+        ARViewOnOff(!isActive);
+    }
+
+
+    public async Task Tracking()
+    {
+        await Task.Delay(2000);
+        if (appConfig.GetAppPhase() == AppPhase.Tracking) appConfig.GotTracked = true;
+            
+    }
+
+    public async Task Mapping()
+    {
+        await Task.Delay(2000);
+        if (appConfig.GetAppPhase() == AppPhase.Mapping) appConfig.MadeMap = true;
+    }
+
+    private async Task TriggerTrackingButtonAction()
+    {
+        AppPhase phase = appConfig.GetAppPhase();
+        if (phase != AppPhase.Tracking)
+        {
+            appConfig.SetAppPhase(AppPhase.Tracking);
+            await Tracking();
+        }
+        else
+        {
+            appConfig.SetAppPhase(AppPhase.StandbyTracking);
+        }
+    }
+    private async Task TriggerMappingButtonAction()
+    {
+        Debug.Log("Mapping button pressed.");
+        AppPhase phase = appConfig.GetAppPhase();
+        if (phase != AppPhase.Mapping)
+        {
+            appConfig.SetAppPhase(AppPhase.Mapping);
+            await Mapping();
+        }
+        else
+        {
+            appConfig.SetAppPhase(AppPhase.Standby);
+        }
+    }
+    private void TriggerPhotoShootButtonAction()
+    {
+        AppPhase phase = appConfig.GetAppPhase();
+        if (phase != AppPhase.Mapped)
+        {
+
+        }
+        else
+        {
+            appConfig.MadePhoto = true;
+            Debug.Log("MADE PHOTO!!");
+        }
+    }
+    private void TriggerSubmitButtonAction()
+    {
+        AppPhase phase = appConfig.GetAppPhase();
+        if (phase != AppPhase.PhotoShot)
+        {
+
+        }
+        else
+        {
+            appConfig.Submitted = true;
+            Debug.Log("SUBMIT DONE!!");
+        }
+    }
+
+}

@@ -1,64 +1,181 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 
 public class AppMaster : MonoBehaviour
 {
-    [SerializeField] private GameObject _status;
-    [SerializeField] private TMP_Text _statusText;
-    [SerializeField] private GameObject _information;
-    [SerializeField] private TMP_Text _informationText;
-    [SerializeField] private GameObject _radarView;
-
-    [SerializeField] private Button _radarButton;
-    [SerializeField] private Button _trackingButton;
-    [SerializeField] private Button _arViewButton;
-    [SerializeField] private Button _mappingButton;
-    [SerializeField] private Button _photoShootButton;
-    [SerializeField] private Button _submitButton;
-
+    private AppConfig appConfig;
+    [SerializeField] private AppUIMaster _appUIMaster;
     private void Awake()
     {
-        _radarButton.onClick.AddListener(() => TriggerRadarButtonAction());
-        _trackingButton.onClick.AddListener(() => TriggerTrackingButtonAction());
-        _arViewButton.onClick.AddListener(() => TriggerARViewButtonAction());
-        _mappingButton.onClick.AddListener(() => TriggerMappingButtonAction());
-        _photoShootButton.onClick.AddListener(() => TriggerPhotoShootButtonAction());
-        _submitButton.onClick.AddListener(() => TriggerSubmitButtonAction());
-        _status.gameObject.SetActive(true);
-        _information.gameObject.SetActive(false);
-        _radarView.gameObject.SetActive(false);
+        appConfig = new AppConfig();
+        _appUIMaster.appConfig = appConfig;
+    }
+    private void Start()
+    {
+        Initialize();
+        _appUIMaster.Initialize();
+        appConfig.SetAppPhase(AppPhase.Initialization);
+    }
+    private void Initialize()
+    {
+        appConfig.PhaseChangeAction += async (oldPhase, newPhase)
+            => await PhaseControlHandler(oldPhase, newPhase);
+    }
+    private void Update()
+    {
+
     }
 
-    private void TriggerRadarButtonAction()
+    private async Task PhaseControlHandler(AppPhase oldPhase, AppPhase newPhase)
     {
-        bool isActive = _radarView.activeSelf;
-        _radarView.gameObject.SetActive(!isActive);
+        float timeOut = 0;
+        float maxWaitTime = 0;
+        switch (newPhase)
+        {
+            case AppPhase.Initialization:
+                appConfig.MadeMap = false;
+                appConfig.MadePhoto = false;
+                appConfig.GotMapList = false;
+                appConfig.GotNearbyMap = false;
+                appConfig.GotTracked = false;
+
+                //イニシャライズ用のディレイ
+                await Task.Delay(100);
+                appConfig.SetAppPhase(AppPhase.Standby);
+                break;
+
+            case AppPhase.Standby:
+                break;
+
+            case AppPhase.Mapping:
+                appConfig.MadeMap = false;
+                // ウェイトタイムを入れる(UI側でのARView起動待ち)
+                timeOut = 0;
+                maxWaitTime = 5f; // 最大待機時間5秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping) return;
+                    if (appConfig.IsArView) break;
+                }
+                if (!appConfig.IsArView)
+                {
+                    Debug.LogWarning("ARViewが起動していません。");
+                    return;
+                }
+                // UI側でマッピング開始処理を入れる
+                // ウェイトタイムを入れる(UI側でのMapping起動待ち)
+                timeOut = 0;
+                maxWaitTime = 3f; // 最大待機時間3秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping) return;
+                    if (appConfig.MadeMap) break;
+                }
+                if (!appConfig.MadeMap)
+                {
+                    Debug.LogWarning("タイムアウトの為、マッピングがキャンセルされました。");
+                    return;
+                }
+                // マッピング終了後、処理を移行する
+                appConfig.SetAppPhase(AppPhase.Mapped);
+                break;
+            case AppPhase.Mapped:
+                appConfig.MadePhoto = false;
+                // ウェイトタイムを入れる(UI側でのARView起動待ち)
+                timeOut = 0;
+                maxWaitTime = 60f; // 最大待機時間60秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.Mapped) return;
+                    if (appConfig.MadePhoto) break;
+                }
+                if (!appConfig.MadePhoto)
+                {
+                    Debug.LogWarning("タイムアウトの為、フォト撮影がキャンセルされました。");
+                    return;
+                }
+                // フォト撮影後処理を入れる
+                appConfig.SetAppPhase(AppPhase.PhotoShot);
+                break;
+            case AppPhase.PhotoShot:
+                appConfig.Submitted = false;
+                // ウェイトタイムを入れる(UI側でのARView起動待ち)
+                timeOut = 0;
+                maxWaitTime = 60f; // 最大待機時間60秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.PhotoShot) return;
+                    if (appConfig.Submitted) break;
+                }
+                if (!appConfig.Submitted)
+                {
+                    Debug.LogWarning("タイムアウトの為、投稿がキャンセルされました。");
+                    return;
+                }
+                // フォト撮影後処理を入れる
+                appConfig.SetAppPhase(AppPhase.Tracking);
+                // 下記はTrackerからの呼び出しが良さそう。
+                await _appUIMaster.Tracking();
+                break;
+
+            case AppPhase.Radar:
+                break;
+
+            case AppPhase.StandbyTracking:
+                break;
+
+            case AppPhase.Tracking:
+                appConfig.GotTracked = false;
+                // ウェイトタイムを入れる(UI側でのARView起動待ち)
+                timeOut = 0;
+                maxWaitTime = 5f; // 最大待機時間5秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(10);
+                    timeOut += 0.01f;
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking) return;
+                    if (appConfig.IsArView) break;
+                }
+                if (!appConfig.IsArView)
+                {
+                    Debug.LogWarning("ARViewが起動していません。");
+                    return;
+                }
+                // UI側でマッピング開始処理を入れる
+                // ウェイトタイムを入れる(UI側でのMapping起動待ち)
+                timeOut = 0;
+                maxWaitTime = 3f; // 最大待機時間3秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking) return;
+                    if (appConfig.GotTracked) break;
+                }
+                if (!appConfig.GotTracked)
+                {
+                    Debug.LogWarning("タイムアウトの為、マッピングがキャンセルされました。");
+                    return;
+                }
+                // マッピング終了後、処理を移行する
+                appConfig.SetAppPhase(AppPhase.Tracked);
+                break;
+            case AppPhase.Tracked:
+                break;
+        }
     }
-    private void TriggerTrackingButtonAction()
-    {
-        // Implement tracking button action
-        Debug.Log("Tracking button pressed.");
-    }
-    private void TriggerARViewButtonAction()
-    {
-        // Implement AR view button action
-        Debug.Log("AR View button pressed.");
-    }
-    private void TriggerMappingButtonAction()
-    {
-        // Implement mapping button action
-        Debug.Log("Mapping button pressed.");
-    }
-    private void TriggerPhotoShootButtonAction()
-    {
-        // Implement photo shoot button action
-        Debug.Log("Photo Shoot button pressed.");
-    }
-    private void TriggerSubmitButtonAction()
-    {
-        // Implement submit button action
-        Debug.Log("Submit button pressed.");
-    }
+
 
 }
+
+
