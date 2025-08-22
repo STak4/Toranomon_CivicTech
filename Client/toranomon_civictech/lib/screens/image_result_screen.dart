@@ -81,7 +81,7 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
 
       final fileName = 'leonard_ai_${DateTime.now().millisecondsSinceEpoch}';
       await ref
-          .read(gallerySaverProvider.notifier)
+          .read(gallerySaverProviderProvider.notifier)
           .saveToGallery(_imageUrl, fileName: fileName);
     } catch (e) {
       AppLogger.e('ギャラリー保存でエラー: $e');
@@ -149,15 +149,18 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
   @override
   Widget build(BuildContext context) {
     // ギャラリー保存の状態を監視
-    final gallerySaveState = ref.watch(gallerySaverProvider);
+    final gallerySaveState = ref.watch(gallerySaverProviderProvider);
 
     // ギャラリー保存の結果を監視
-    ref.listen<AsyncValue<bool>>(gallerySaverProvider, (previous, next) {
+    ref.listen<AsyncValue<bool>>(gallerySaverProviderProvider, (
+      previous,
+      next,
+    ) {
       next.when(
         data: (success) {
           if (success && previous?.value != success) {
             _showSuccessSnackBar('ギャラリーに保存しました');
-            ref.read(gallerySaverProvider.notifier).resetSaveState();
+            ref.read(gallerySaverProviderProvider.notifier).resetSaveState();
           }
         },
         loading: () {

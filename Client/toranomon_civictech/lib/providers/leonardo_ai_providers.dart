@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/leonardo_ai/generated_image.dart';
@@ -299,7 +299,7 @@ class ImageEditing extends _$ImageEditing {
 ///
 /// 生成・編集された画像をデバイスのギャラリーに保存する
 @riverpod
-class GallerySaver extends _$GallerySaver {
+class GallerySaverProvider extends _$GallerySaverProvider {
   @override
   FutureOr<bool> build() => false;
 
@@ -335,14 +335,12 @@ class GallerySaver extends _$GallerySaver {
       }
 
       // ギャラリーに保存
-      final result = await ImageGallerySaver.saveImage(
-        Uint8List.fromList(response.data),
-        name:
-            fileName ?? 'leonardo_ai_${DateTime.now().millisecondsSinceEpoch}',
-        isReturnImagePathOfIOS: true,
+      final result = await GallerySaver.saveImage(
+        imageUrl,
+        albumName: 'Leonardo AI',
       );
 
-      if (result['isSuccess'] == true) {
+      if (result == true) {
         AppLogger.i('ギャラリーへの保存が完了');
         state = const AsyncValue.data(true);
       } else {
@@ -365,21 +363,52 @@ class GallerySaver extends _$GallerySaver {
   /// ストレージ権限をチェック
   Future<bool> _checkStoragePermission() async {
     try {
-      final permission = Permission.storage;
-      final status = await permission.status;
-
-      if (status.isGranted) {
-        return true;
+      if (Platform.isAndroid) {
+        // Android 13以降（API 33以降）ではREAD_MEDIA_IMAGESを使用
+        if (await _isAndroid13OrHigher()) {
+          final photosStatus = await Permission.photos.status;
+          if (photosStatus.isGranted) {
+            return true;
+          } else {
+            final result = await Permission.photos.request();
+            return result.isGranted;
+          }
+        } else {
+          // Android 12以前ではstorage権限を使用
+          final storageStatus = await Permission.storage.status;
+          if (storageStatus.isGranted) {
+            return true;
+          } else {
+            final result = await Permission.storage.request();
+            return result.isGranted;
+          }
+        }
+      } else {
+        // iOSではphotos権限を使用
+        final photosStatus = await Permission.photos.status;
+        if (photosStatus.isGranted) {
+          return true;
+        } else {
+          final result = await Permission.photos.request();
+          return result.isGranted;
+        }
       }
-
-      if (status.isDenied) {
-        final result = await permission.request();
-        return result.isGranted;
-      }
-
-      return false;
     } catch (e) {
       AppLogger.e('権限チェックでエラー: $e');
+      return false;
+    }
+  }
+
+  /// Android 13以降（API 33以降）かどうかを判定
+  Future<bool> _isAndroid13OrHigher() async {
+    if (!Platform.isAndroid) return false;
+
+    try {
+      // Android SDKバージョンを取得
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      return androidInfo.version.sdkInt >= 33; // Android 13 = API 33
+    } catch (e) {
+      AppLogger.e('Android SDKバージョンの取得に失敗: $e');
       return false;
     }
   }

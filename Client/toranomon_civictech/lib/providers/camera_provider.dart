@@ -97,10 +97,14 @@ class CameraNotifier extends _$CameraNotifier {
       AppLogger.i('CameraProvider - カメラ初期化が完了しました');
     } catch (e, stackTrace) {
       AppLogger.e('CameraProvider - カメラ初期化中にエラーが発生しました', e, stackTrace);
-      state = state.copyWith(
-        isLoading: false,
-        error: 'カメラの初期化に失敗しました: ${e.toString()}',
-      );
+      try {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'カメラの初期化に失敗しました: ${e.toString()}',
+        );
+      } catch (_) {
+        // プロバイダーが破棄された場合は無視
+      }
     }
   }
 
@@ -265,7 +269,11 @@ class CameraNotifier extends _$CameraNotifier {
         await repository.disposeCamera(controller);
       }
 
-      state = const CameraState();
+      try {
+        state = const CameraState();
+      } catch (_) {
+        // プロバイダーが破棄された場合は無視
+      }
       AppLogger.i('CameraProvider - カメラ破棄が完了しました');
     } catch (e, stackTrace) {
       AppLogger.e('CameraProvider - カメラ破棄中にエラーが発生しました', e, stackTrace);

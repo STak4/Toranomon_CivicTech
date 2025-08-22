@@ -57,7 +57,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ★ Manifest の ${GOOGLE_MAPS_API_KEY} に注入
+        // ★ Manifest の ${GOOGLE_MAPS_KEY} に注入
         manifestPlaceholders["GOOGLE_MAPS_KEY"] = googleMapsKeyAndroid
     }
 

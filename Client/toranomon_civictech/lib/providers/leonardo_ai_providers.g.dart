@@ -112,25 +112,26 @@ final imageEditingProvider =
     );
 
 typedef _$ImageEditing = AutoDisposeAsyncNotifier<EditedImage?>;
-String _$gallerySaverHash() => r'eedac36f8382540868897880c797de44f08def43';
+String _$gallerySaverProviderHash() =>
+    r'bc6bee448ad99e800433e0607b7b7196ff7b1e66';
 
 /// ギャラリー保存プロバイダー
 ///
 /// 生成・編集された画像をデバイスのギャラリーに保存する
 ///
-/// Copied from [GallerySaver].
-@ProviderFor(GallerySaver)
-final gallerySaverProvider =
-    AutoDisposeAsyncNotifierProvider<GallerySaver, bool>.internal(
-      GallerySaver.new,
-      name: r'gallerySaverProvider',
+/// Copied from [GallerySaverProvider].
+@ProviderFor(GallerySaverProvider)
+final gallerySaverProviderProvider =
+    AutoDisposeAsyncNotifierProvider<GallerySaverProvider, bool>.internal(
+      GallerySaverProvider.new,
+      name: r'gallerySaverProviderProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$gallerySaverHash,
+          : _$gallerySaverProviderHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$GallerySaver = AutoDisposeAsyncNotifier<bool>;
+typedef _$GallerySaverProvider = AutoDisposeAsyncNotifier<bool>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../providers/camera_provider.dart';
 import '../utils/app_logger.dart';
 
@@ -174,34 +175,58 @@ class _CameraCaptureScreenState extends ConsumerState<CameraCaptureScreen>
       );
 
       try {
-        // ストレージ権限を確認
-        final status = await Permission.storage.status;
-        if (!status.isGranted) {
-          final result = await Permission.storage.request();
-          if (!result.isGranted) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ストレージへのアクセス権限が必要です'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+        // ストレージ権限を確認（Android 13以降はREAD_MEDIA_IMAGES、それ以前はstorage）
+        bool hasPermission = false;
+        if (Platform.isAndroid) {
+          // Android 13以降（API 33以降）ではREAD_MEDIA_IMAGESを使用
+          if (await _isAndroid13OrHigher()) {
+            final photosStatus = await Permission.photos.status;
+            if (photosStatus.isGranted) {
+              hasPermission = true;
+            } else {
+              final result = await Permission.photos.request();
+              hasPermission = result.isGranted;
             }
-            return;
+          } else {
+            // Android 12以前ではstorage権限を使用
+            final storageStatus = await Permission.storage.status;
+            if (storageStatus.isGranted) {
+              hasPermission = true;
+            } else {
+              final result = await Permission.storage.request();
+              hasPermission = result.isGranted;
+            }
+          }
+        } else {
+          // iOSではphotos権限を使用
+          final photosStatus = await Permission.photos.status;
+          if (photosStatus.isGranted) {
+            hasPermission = true;
+          } else {
+            final result = await Permission.photos.request();
+            hasPermission = result.isGranted;
           }
         }
 
-        // 写真をギャラリーに保存
-        final file = File(_capturedImage!.path);
-        final bytes = await file.readAsBytes();
+        if (!hasPermission) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('写真の保存にはギャラリーへのアクセス権限が必要です'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
 
-        final result = await ImageGallerySaver.saveImage(
-          bytes,
-          quality: 100,
-          name: 'toranomon_civictech_${DateTime.now().millisecondsSinceEpoch}',
+        // 写真をギャラリーに保存
+        final result = await GallerySaver.saveImage(
+          _capturedImage!.path,
+          albumName: 'Toranomon CivicTech',
         );
 
-        if (result['isSuccess'] == true) {
+        if (result == true) {
           AppLogger.i('CameraCaptureScreen - 写真をギャラリーに保存しました');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -603,5 +628,19 @@ class _CameraCaptureScreenState extends ConsumerState<CameraCaptureScreen>
         ),
       ],
     );
+  }
+
+  /// Android 13以降（API 33以降）かどうかを判定
+  Future<bool> _isAndroid13OrHigher() async {
+    if (!Platform.isAndroid) return false;
+
+    try {
+      // Android SDKバージョンを取得
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      return androidInfo.version.sdkInt >= 33; // Android 13 = API 33
+    } catch (e) {
+      AppLogger.e('Android SDKバージョンの取得に失敗: $e');
+      return false;
+    }
   }
 }
