@@ -4,9 +4,24 @@ import java.util.Properties
 // 1) ルートの .env を読み込むユーティリティ
 fun loadDotEnv(): Properties {
     val props = Properties()
-    val f = rootProject.file(".env")
-    if (f.exists()) {
-        f.inputStream().use { props.load(it) } // KEY=VALUE を読み込み
+    
+    // 複数のパスで.envファイルを探す
+    val possiblePaths = listOf(
+        rootProject.file(".env"),
+        project.file("../.env"),
+        project.file("../../.env")
+    )
+    
+    var envFile = possiblePaths.find { it.exists() }
+    
+    if (envFile != null) {
+        envFile.inputStream().use { props.load(it) } // KEY=VALUE を読み込み
+        println("Android Build - .env file loaded successfully from: ${envFile.absolutePath}")
+    } else {
+        println("Android Build - .env file not found in any of the following paths:")
+        possiblePaths.forEach { path ->
+            println("  - ${path.absolutePath}")
+        }
     }
     return props
 }
@@ -16,7 +31,19 @@ fun resolveSecret(key: String, env: Properties): String {
     // ./gradlew -PKEY=... や gradle.properties の優先
     val fromGradle = findProperty(key)?.toString()
         ?: providers.gradleProperty(key).orNull
-    return (fromGradle ?: env.getProperty(key, "")).trim()
+    val result = (fromGradle ?: env.getProperty(key, "")).trim()
+    
+    // APIキーの読み取り状況をログ出力
+    if (key == "GOOGLE_MAPS_KEY_ANDROID") {
+        if (result.isNotEmpty()) {
+            println("Android Build - Google Maps API Key loaded: ${result.substring(0, 10)}...")
+            println("Android Build - Google Maps API Key length: ${result.length} characters")
+        } else {
+            println("Android Build - Google Maps API Key is empty or not found")
+        }
+    }
+    
+    return result
 }
 
 val envProps = loadDotEnv()
