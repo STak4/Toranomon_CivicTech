@@ -68,15 +68,27 @@ dependencies:
 
   # Camera & Media
   camera:
-  image_picker:
+  image_picker: ^1.2.0
   image:
   flutter_colorpicker:
-  image_gallery_saver:
+  gallery_saver_plus: ^3.2.8
 
+  # HTTP Client & API
+  dio:
+  retrofit:
+  json_annotation:
+  
+  # Data Models
+  freezed_annotation: ^3.0.0
+  json_serializable: ^6.9.5
+  
+  # Security
+  flutter_secure_storage: ^9.2.2
 
   # その他
   supabase:
   supabase_flutter:
+  device_info_plus:
   flutter_unity_widget:
     git:
       url: https://github.com/juicycleff/flutter-unity-view-widget.git
@@ -95,6 +107,10 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints:
   build_runner:
+  
+  # Code Generation
+  freezed: ^3.0.0
+  retrofit_generator:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

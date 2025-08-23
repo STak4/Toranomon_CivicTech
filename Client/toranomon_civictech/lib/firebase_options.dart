@@ -64,7 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '654664809716',
     projectId: 'toranomon-civictech',
     storageBucket: 'toranomon-civictech.firebasestorage.app',
-    iosClientId: '654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so.apps.googleusercontent.com',
+    iosClientId:
+        '654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so.apps.googleusercontent.com',
     iosBundleId: 'com.example.toranomonCivictech',
   );
 
@@ -74,7 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '654664809716',
     projectId: 'toranomon-civictech',
     storageBucket: 'toranomon-civictech.firebasestorage.app',
-    iosClientId: '654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so.apps.googleusercontent.com',
+    iosClientId:
+        '654664809716-i9cqpvlag7a4desr93fe9t0tsgmhs8so.apps.googleusercontent.com',
     iosBundleId: 'com.example.toranomonCivictech',
   );
 

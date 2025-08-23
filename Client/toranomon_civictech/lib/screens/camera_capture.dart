@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import '../providers/camera_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/permission_utils.dart';
 
 /// カメラ撮影画面
 /// 独立した画面として実装され、カメラプレビュー、撮影、撮影後のプレビュー機能を提供
@@ -174,34 +176,69 @@ class _CameraCaptureScreenState extends ConsumerState<CameraCaptureScreen>
       );
 
       try {
+        // デバッグ: 権限状態を詳細に確認
+        await PermissionUtils.debugPermissionStatus();
+
         // ストレージ権限を確認
-        final status = await Permission.storage.status;
-        if (!status.isGranted) {
-          final result = await Permission.storage.request();
-          if (!result.isGranted) {
-            if (mounted) {
+        final hasPermission =
+            await PermissionUtils.requestPhotoLibraryPermission();
+
+        if (!hasPermission) {
+          // 権限の状態をログ出力
+          await PermissionUtils.logPermissionStatus();
+
+          // 権限が拒否されている場合の詳細なエラーメッセージ
+          final errorMessage =
+              await PermissionUtils.getDetailedPermissionErrorMessage();
+
+          // iOS 14以降のphotosAddOnly権限と従来のphotos権限の両方をチェック
+          final photosAddOnlyStatus = await Permission.photosAddOnly.status;
+          final photosStatus = await Permission.photos.status;
+
+          // 権限が永続的に拒否された場合は設定画面を開く
+          if (photosAddOnlyStatus.isPermanentlyDenied ||
+              photosStatus.isPermanentlyDenied) {
+            AppLogger.w('権限が永続的に拒否されています。設定画面を開きます。');
+            await PermissionUtils.openAppSettings();
+          }
+
+          if (mounted) {
+            if (photosAddOnlyStatus.isPermanentlyDenied ||
+                photosStatus.isPermanentlyDenied) {
+              // 設定画面を開いた後もダイアログを表示
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('権限が必要です'),
+                  content: Text(errorMessage),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('閉じる'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ストレージへのアクセス権限が必要です'),
+                SnackBar(
+                  content: Text(errorMessage),
                   backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
                 ),
               );
             }
-            return;
           }
+          return;
         }
 
         // 写真をギャラリーに保存
-        final file = File(_capturedImage!.path);
-        final bytes = await file.readAsBytes();
-
-        final result = await ImageGallerySaver.saveImage(
-          bytes,
-          quality: 100,
-          name: 'toranomon_civictech_${DateTime.now().millisecondsSinceEpoch}',
+        final result = await GallerySaver.saveImage(
+          _capturedImage!.path,
+          albumName: 'Toranomon CivicTech',
         );
 
-        if (result['isSuccess'] == true) {
+        if (result == true) {
           AppLogger.i('CameraCaptureScreen - 写真をギャラリーに保存しました');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

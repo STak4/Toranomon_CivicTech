@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../utils/app_logger.dart';
 
 class MapScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen>{
+class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _currentPosition;
   final Set<Marker> _markers = {};
@@ -27,7 +28,38 @@ class _MapScreenState extends State<MapScreen>{
   void initState() {
     super.initState();
     AppLogger.i('MapSampleScreen: 画面を初期化しています');
+
     _requestLocationPermissionAndGetLocation();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Google Maps APIキーの長さ確認のみ
+    _checkGoogleMapsApiKey();
+  }
+
+  /// Google Maps APIキーの長さを確認する
+  void _checkGoogleMapsApiKey() {
+    try {
+      final iosApiKey = dotenv.env['GOOGLE_MAPS_KEY_IOS'];
+      final androidApiKey = dotenv.env['GOOGLE_MAPS_KEY_ANDROID'];
+
+      if (iosApiKey != null) {
+        AppLogger.d('MapSampleScreen: iOS API Key length: ${iosApiKey.length}');
+      }
+      if (androidApiKey != null) {
+        AppLogger.d(
+          'MapSampleScreen: Android API Key length: ${androidApiKey.length}',
+        );
+      }
+    } catch (e) {
+      AppLogger.e(
+        'MapSampleScreen: Failed to check Google Maps API Key status',
+        e,
+      );
+    }
   }
 
   @override

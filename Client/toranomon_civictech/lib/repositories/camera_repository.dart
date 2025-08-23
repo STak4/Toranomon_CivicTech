@@ -112,6 +112,7 @@ class CameraRepositoryImpl implements CameraRepository {
         imageQuality: 85, // 品質を85%に設定
         maxWidth: 1920, // 最大幅を制限
         maxHeight: 1920, // 最大高さを制限
+        requestFullMetadata: true, // iOS 14以降でメタデータを要求
       );
 
       if (image != null) {

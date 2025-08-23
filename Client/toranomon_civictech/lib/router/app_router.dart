@@ -10,6 +10,13 @@ import '../screens/profile_screen.dart';
 import '../screens/unity_demo_screen.dart';
 import '../screens/map_screen.dart';
 import '../screens/camera_capture.dart';
+import '../screens/leonardo_ai_menu_screen.dart';
+import '../screens/image_generation_screen.dart';
+import '../screens/image_editing_screen.dart';
+import '../screens/image_result_screen.dart';
+import '../models/leonardo_ai/generated_image.dart';
+import '../models/leonardo_ai/edited_image.dart';
+import '../models/leonardo_ai/generation_result.dart';
 import '../utils/app_logger.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -82,6 +89,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'camera',
             name: 'camera',
             builder: (context, state) => const CameraCaptureScreen(),
+          ),
+          GoRoute(
+            path: 'leonardo-ai',
+            name: 'leonardo-ai',
+            builder: (context, state) => const LeonardoAiMenuScreen(),
+            routes: [
+              GoRoute(
+                path: 'generate',
+                name: 'leonardo-ai-generate',
+                builder: (context, state) => const ImageGenerationScreen(),
+              ),
+              GoRoute(
+                path: 'edit',
+                name: 'leonardo-ai-edit',
+                builder: (context, state) => const ImageEditingScreen(),
+              ),
+              GoRoute(
+                path: 'result',
+                name: 'leonardo-ai-result',
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  return ImageResultScreen(
+                    generatedImage: extra?['generatedImage'] as GeneratedImage?,
+                    editedImage: extra?['editedImage'] as EditedImage?,
+                    generationResult:
+                        extra?['generationResult'] as GenerationResult?,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
