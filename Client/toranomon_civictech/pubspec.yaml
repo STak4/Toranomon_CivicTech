@@ -68,7 +68,7 @@ dependencies:
 
   # Camera & Media
   camera:
-  image_picker:
+  image_picker: ^1.2.0
   image:
   flutter_colorpicker:
   gallery_saver_plus: ^3.2.8

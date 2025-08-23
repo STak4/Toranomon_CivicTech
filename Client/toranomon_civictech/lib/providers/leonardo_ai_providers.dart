@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/leonardo_ai/edited_image.dart';
@@ -15,6 +15,7 @@ import '../services/leonardo_ai/leonardo_ai_service.dart';
 import '../services/leonardo_ai/result.dart';
 import '../repositories/leonardo_ai_repository.dart';
 import '../utils/app_logger.dart';
+import '../utils/permission_utils.dart';
 
 part 'leonardo_ai_providers.g.dart';
 
@@ -316,11 +317,27 @@ class GallerySaverProvider extends _$GallerySaverProvider {
       AppLogger.i('ギャラリーへの保存を開始: $imageUrl');
 
       // 権限チェック
-      final hasPermission = await _checkStoragePermission();
+      final hasPermission =
+          await PermissionUtils.requestPhotoLibraryPermission();
       if (!hasPermission) {
-        throw const LeonardoAiException.validationError(
-          'ストレージへのアクセス権限が必要です。設定から権限を許可してください。',
-        );
+        // 権限の状態をログ出力
+        await PermissionUtils.logPermissionStatus();
+
+        // 権限が拒否されている場合の詳細なエラーメッセージ
+        final errorMessage =
+            await PermissionUtils.getDetailedPermissionErrorMessage();
+
+        // 権限が永続的に拒否された場合は設定画面を開く
+        final photosAddOnlyStatus = await Permission.photosAddOnly.status;
+        final photosStatus = await Permission.photos.status;
+
+        if (photosAddOnlyStatus.isPermanentlyDenied ||
+            photosStatus.isPermanentlyDenied) {
+          AppLogger.w('権限が永続的に拒否されています。設定画面を開きます。');
+          await PermissionUtils.openAppSettings();
+        }
+
+        throw LeonardoAiException.validationError(errorMessage);
       }
 
       // 画像をダウンロード
@@ -359,59 +376,6 @@ class GallerySaverProvider extends _$GallerySaverProvider {
           StackTrace.current,
         );
       }
-    }
-  }
-
-  /// ストレージ権限をチェック
-  Future<bool> _checkStoragePermission() async {
-    try {
-      if (Platform.isAndroid) {
-        // Android 13以降（API 33以降）ではREAD_MEDIA_IMAGESを使用
-        if (await _isAndroid13OrHigher()) {
-          final photosStatus = await Permission.photos.status;
-          if (photosStatus.isGranted) {
-            return true;
-          } else {
-            final result = await Permission.photos.request();
-            return result.isGranted;
-          }
-        } else {
-          // Android 12以前ではstorage権限を使用
-          final storageStatus = await Permission.storage.status;
-          if (storageStatus.isGranted) {
-            return true;
-          } else {
-            final result = await Permission.storage.request();
-            return result.isGranted;
-          }
-        }
-      } else {
-        // iOSではphotos権限を使用
-        final photosStatus = await Permission.photos.status;
-        if (photosStatus.isGranted) {
-          return true;
-        } else {
-          final result = await Permission.photos.request();
-          return result.isGranted;
-        }
-      }
-    } catch (e) {
-      AppLogger.e('権限チェックでエラー: $e');
-      return false;
-    }
-  }
-
-  /// Android 13以降（API 33以降）かどうかを判定
-  Future<bool> _isAndroid13OrHigher() async {
-    if (!Platform.isAndroid) return false;
-
-    try {
-      // Android SDKバージョンを取得
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      return androidInfo.version.sdkInt >= 33; // Android 13 = API 33
-    } catch (e) {
-      AppLogger.e('Android SDKバージョンの取得に失敗: $e');
-      return false;
     }
   }
 

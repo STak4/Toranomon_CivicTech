@@ -5,9 +5,10 @@ import 'package:camera/camera.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+
 import '../providers/camera_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/permission_utils.dart';
 
 /// カメラ撮影画面
 /// 独立した画面として実装され、カメラプレビュー、撮影、撮影後のプレビュー機能を提供
@@ -175,47 +176,58 @@ class _CameraCaptureScreenState extends ConsumerState<CameraCaptureScreen>
       );
 
       try {
-        // ストレージ権限を確認（Android 13以降はREAD_MEDIA_IMAGES、それ以前はstorage）
-        bool hasPermission = false;
-        if (Platform.isAndroid) {
-          // Android 13以降（API 33以降）ではREAD_MEDIA_IMAGESを使用
-          if (await _isAndroid13OrHigher()) {
-            final photosStatus = await Permission.photos.status;
-            if (photosStatus.isGranted) {
-              hasPermission = true;
-            } else {
-              final result = await Permission.photos.request();
-              hasPermission = result.isGranted;
-            }
-          } else {
-            // Android 12以前ではstorage権限を使用
-            final storageStatus = await Permission.storage.status;
-            if (storageStatus.isGranted) {
-              hasPermission = true;
-            } else {
-              final result = await Permission.storage.request();
-              hasPermission = result.isGranted;
-            }
-          }
-        } else {
-          // iOSではphotos権限を使用
-          final photosStatus = await Permission.photos.status;
-          if (photosStatus.isGranted) {
-            hasPermission = true;
-          } else {
-            final result = await Permission.photos.request();
-            hasPermission = result.isGranted;
-          }
-        }
+        // デバッグ: 権限状態を詳細に確認
+        await PermissionUtils.debugPermissionStatus();
+
+        // ストレージ権限を確認
+        final hasPermission =
+            await PermissionUtils.requestPhotoLibraryPermission();
 
         if (!hasPermission) {
+          // 権限の状態をログ出力
+          await PermissionUtils.logPermissionStatus();
+
+          // 権限が拒否されている場合の詳細なエラーメッセージ
+          final errorMessage =
+              await PermissionUtils.getDetailedPermissionErrorMessage();
+
+          // iOS 14以降のphotosAddOnly権限と従来のphotos権限の両方をチェック
+          final photosAddOnlyStatus = await Permission.photosAddOnly.status;
+          final photosStatus = await Permission.photos.status;
+
+          // 権限が永続的に拒否された場合は設定画面を開く
+          if (photosAddOnlyStatus.isPermanentlyDenied ||
+              photosStatus.isPermanentlyDenied) {
+            AppLogger.w('権限が永続的に拒否されています。設定画面を開きます。');
+            await PermissionUtils.openAppSettings();
+          }
+
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('写真の保存にはギャラリーへのアクセス権限が必要です'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            if (photosAddOnlyStatus.isPermanentlyDenied ||
+                photosStatus.isPermanentlyDenied) {
+              // 設定画面を開いた後もダイアログを表示
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('権限が必要です'),
+                  content: Text(errorMessage),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('閉じる'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMessage),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
           }
           return;
         }
@@ -628,19 +640,5 @@ class _CameraCaptureScreenState extends ConsumerState<CameraCaptureScreen>
         ),
       ],
     );
-  }
-
-  /// Android 13以降（API 33以降）かどうかを判定
-  Future<bool> _isAndroid13OrHigher() async {
-    if (!Platform.isAndroid) return false;
-
-    try {
-      // Android SDKバージョンを取得
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      return androidInfo.version.sdkInt >= 33; // Android 13 = API 33
-    } catch (e) {
-      AppLogger.e('Android SDKバージョンの取得に失敗: $e');
-      return false;
-    }
   }
 }
