@@ -7,8 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/leonardo_ai/generated_image.dart';
 import '../models/leonardo_ai/edited_image.dart';
+import '../models/leonardo_ai/generation_result.dart';
 
 import '../models/leonardo_ai/leonardo_ai_exception.dart';
 import '../services/leonardo_ai/leonardo_ai_service.dart';
@@ -32,14 +32,14 @@ Future<String> leonardoApiKey(Ref ref) async {
     // まず環境変数から取得を試行
     final envApiKey = dotenv.env['LEONARDO_API_KEY'];
     if (envApiKey != null && envApiKey.isNotEmpty) {
-      AppLogger.d('環境変数からAPIキーを取得');
+      AppLogger.d('環境変数からAPIキーを取得 (Length: ${envApiKey.length})');
       return envApiKey;
     }
 
     // 環境変数にない場合はセキュアストレージから取得
     final storedApiKey = await _secureStorage.read(key: 'leonardo_api_key');
     if (storedApiKey != null && storedApiKey.isNotEmpty) {
-      AppLogger.d('セキュアストレージからAPIキーを取得');
+      AppLogger.d('セキュアストレージからAPIキーを取得 (Length: ${storedApiKey.length})');
       return storedApiKey;
     }
 
@@ -101,7 +101,7 @@ class ImageGeneration extends _$ImageGeneration {
   dio.CancelToken? _cancelToken;
 
   @override
-  FutureOr<GeneratedImage?> build() => null;
+  FutureOr<GenerationResult?> build() => null;
 
   /// 画像生成を実行
   ///
@@ -137,9 +137,11 @@ class ImageGeneration extends _$ImageGeneration {
       }
 
       result.fold(
-        (generatedImage) {
-          AppLogger.i('画像生成が完了: ${generatedImage.id}');
-          state = AsyncValue.data(generatedImage);
+        (generationResult) {
+          AppLogger.i(
+            '画像生成が完了: ${generationResult.generationId} (画像数: ${generationResult.imageCount})',
+          );
+          state = AsyncValue.data(generationResult);
         },
         (error) {
           AppLogger.e('画像生成でエラーが発生: $error');

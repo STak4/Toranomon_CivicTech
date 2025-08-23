@@ -34,6 +34,16 @@ void main() async {
       AppLogger.w('App - Google Maps Android API Key not found in .env file');
     }
 
+    // Leonardo AI APIキーの確認
+    final leonardoApiKey = dotenv.env['LEONARDO_API_KEY'];
+    if (leonardoApiKey != null && leonardoApiKey.isNotEmpty) {
+      AppLogger.d(
+        'App - Leonardo AI API Key loaded: ${leonardoApiKey.substring(0, 10)}...',
+      );
+    } else {
+      AppLogger.w('App - Leonardo AI API Key not found in .env file');
+    }
+
     // 全体的なAPIキー状態の確認
     AppLogger.i('App - Environment variables status:');
     AppLogger.i(
@@ -41,6 +51,9 @@ void main() async {
     );
     AppLogger.i(
       '  - GOOGLE_MAPS_KEY_ANDROID: ${androidApiKey != null ? "✓ Loaded" : "✗ Not found"}',
+    );
+    AppLogger.i(
+      '  - LEONARDO_API_KEY: ${leonardoApiKey != null ? "✓ Loaded" : "✗ Not found"}',
     );
 
     // APIキーの長さ確認（基本的な検証）
@@ -50,6 +63,11 @@ void main() async {
     if (androidApiKey != null) {
       AppLogger.d(
         'App - Android API Key length: ${androidApiKey.length} characters',
+      );
+    }
+    if (leonardoApiKey != null) {
+      AppLogger.d(
+        'App - Leonardo AI API Key length: ${leonardoApiKey.length} characters',
       );
     }
   } catch (e) {

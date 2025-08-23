@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../models/leonardo_ai/generation_request.dart';
 import '../../models/leonardo_ai/generation_response.dart';
+import '../../models/leonardo_ai/generation_job_response.dart';
 import '../../models/leonardo_ai/edit_request.dart';
 import '../../models/leonardo_ai/edit_response.dart';
 
@@ -16,12 +17,14 @@ abstract class LeonardoAiApiClient {
 
   /// 画像生成API
   ///
-  /// テキストプロンプトから画像を生成する
+  /// テキストプロンプトから画像生成ジョブを作成する
   ///
   /// [request] 画像生成リクエスト
-  /// Returns 生成された画像の情報
+  /// Returns 生成ジョブの情報
   @POST("/generations")
-  Future<GenerationResponse> generateImage(@Body() GenerationRequest request);
+  Future<GenerationJobResponse> generateImage(
+    @Body() GenerationRequest request,
+  );
 
   /// 画像編集API
   ///

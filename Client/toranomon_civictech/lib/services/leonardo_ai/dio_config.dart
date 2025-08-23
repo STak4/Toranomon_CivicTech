@@ -16,7 +16,7 @@ class DioConfig {
   /// Leonard.ai API用に設定されたDioインスタンスを作成
   static Dio createDio() {
     final dio = Dio();
-    
+
     // 基本設定
     dio.options = BaseOptions(
       baseUrl: _baseUrl,
@@ -26,6 +26,10 @@ class DioConfig {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+      },
+      // デバッグ用の設定を追加
+      validateStatus: (status) {
+        return status != null && status < 500;
       },
     );
 
@@ -42,9 +46,9 @@ class DioConfig {
 
   /// APIキーを取得
   static String? getApiKey() {
-    final apiKey = dotenv.env['LEONARD_API_KEY'];
+    final apiKey = dotenv.env['LEONARDO_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
-      AppLogger.e('LEONARD_API_KEYが設定されていません');
+      AppLogger.e('LEONARDO_API_KEYが設定されていません');
       return null;
     }
     return apiKey;

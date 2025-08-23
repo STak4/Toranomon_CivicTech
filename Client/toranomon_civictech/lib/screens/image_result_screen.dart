@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/leonardo_ai/generated_image.dart';
 import '../models/leonardo_ai/edited_image.dart';
+import '../models/leonardo_ai/generation_result.dart';
 import '../providers/leonardo_ai_providers.dart';
 import '../widgets/loading_overlay_widget.dart';
 import '../utils/app_logger.dart';
@@ -11,10 +12,16 @@ import '../utils/app_logger.dart';
 ///
 /// 生成または編集された画像の表示、ギャラリー保存、共有機能を提供する
 class ImageResultScreen extends ConsumerStatefulWidget {
-  const ImageResultScreen({super.key, this.generatedImage, this.editedImage});
+  const ImageResultScreen({
+    super.key,
+    this.generatedImage,
+    this.editedImage,
+    this.generationResult,
+  });
 
   final GeneratedImage? generatedImage;
   final EditedImage? editedImage;
+  final GenerationResult? generationResult;
 
   @override
   ConsumerState<ImageResultScreen> createState() => _ImageResultScreenState();
@@ -22,6 +29,7 @@ class ImageResultScreen extends ConsumerStatefulWidget {
 
 class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
   bool _isImageExpanded = false;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
@@ -29,10 +37,21 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
     AppLogger.i('画像結果画面を初期化');
   }
 
+  /// 現在表示中の画像を取得
+  GeneratedImage? get _currentImage {
+    if (widget.generationResult != null) {
+      return widget.generationResult!.getImageAt(_currentImageIndex);
+    } else if (widget.generatedImage != null) {
+      return widget.generatedImage;
+    }
+    return null;
+  }
+
   /// 画像URLを取得
   String get _imageUrl {
-    if (widget.generatedImage != null) {
-      return widget.generatedImage!.url;
+    final currentImage = _currentImage;
+    if (currentImage != null) {
+      return currentImage.url;
     } else if (widget.editedImage != null) {
       return widget.editedImage!.editedImageUrl;
     }
@@ -41,8 +60,9 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
 
   /// プロンプトを取得
   String get _prompt {
-    if (widget.generatedImage != null) {
-      return widget.generatedImage!.prompt;
+    final currentImage = _currentImage;
+    if (currentImage != null) {
+      return currentImage.prompt;
     } else if (widget.editedImage != null) {
       return widget.editedImage!.editPrompt;
     }
@@ -51,8 +71,9 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
 
   /// 作成日時を取得
   DateTime get _createdAt {
-    if (widget.generatedImage != null) {
-      return widget.generatedImage!.createdAt;
+    final currentImage = _currentImage;
+    if (currentImage != null) {
+      return currentImage.createdAt;
     } else if (widget.editedImage != null) {
       return widget.editedImage!.createdAt;
     }
@@ -61,7 +82,9 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
 
   /// 画像タイプを取得
   String get _imageType {
-    if (widget.generatedImage != null) {
+    if (widget.generationResult != null) {
+      return '生成画像';
+    } else if (widget.generatedImage != null) {
       return '生成画像';
     } else if (widget.editedImage != null) {
       return '編集画像';
@@ -86,6 +109,25 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
     } catch (e) {
       AppLogger.e('ギャラリー保存でエラー: $e');
       _showErrorSnackBar('ギャラリーへの保存に失敗しました');
+    }
+  }
+
+  /// 前の画像に切り替え
+  void _previousImage() {
+    if (widget.generationResult != null && _currentImageIndex > 0) {
+      setState(() {
+        _currentImageIndex--;
+      });
+    }
+  }
+
+  /// 次の画像に切り替え
+  void _nextImage() {
+    if (widget.generationResult != null &&
+        _currentImageIndex < widget.generationResult!.imageCount - 1) {
+      setState(() {
+        _currentImageIndex++;
+      });
     }
   }
 
@@ -199,25 +241,29 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
-                      // 画像
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isImageExpanded = !_isImageExpanded;
-                          });
-                        },
-                        child: Hero(
-                          tag: 'generated_image_$_imageUrl',
-                          child: Container(
-                            width: double.infinity,
-                            height: _isImageExpanded ? 400 : 300,
-                            decoration: BoxDecoration(color: Colors.grey[200]),
-                            child: _imageUrl.isNotEmpty
-                                ? Image.network(
-                                    _imageUrl,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
+                      // 画像表示エリア
+                      Stack(
+                        children: [
+                          // 画像
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isImageExpanded = !_isImageExpanded;
+                              });
+                            },
+                            child: Hero(
+                              tag: 'generated_image_$_imageUrl',
+                              child: Container(
+                                width: double.infinity,
+                                height: _isImageExpanded ? 400 : 300,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                ),
+                                child: _imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        _imageUrl,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, loadingProgress) {
                                           if (loadingProgress == null) {
                                             return child;
                                           }
@@ -235,49 +281,149 @@ class _ImageResultScreenState extends ConsumerState<ImageResultScreen> {
                                             ),
                                           );
                                         },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Center(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.error_outline,
+                                                      size: 48,
+                                                      color: Colors.grey,
+                                                    ),
+                                                    SizedBox(height: 8),
+                                                    Text(
+                                                      '画像の読み込みに失敗しました',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                      )
+                                    : const Center(
                                         child: Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
-                                              Icons.error_outline,
+                                              Icons.image_not_supported,
                                               size: 48,
                                               color: Colors.grey,
                                             ),
                                             SizedBox(height: 8),
                                             Text(
-                                              '画像の読み込みに失敗しました',
+                                              '画像がありません',
                                               style: TextStyle(
                                                 color: Colors.grey,
                                               ),
                                             ),
                                           ],
                                         ),
-                                      );
-                                    },
-                                  )
-                                : const Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.image_not_supported,
-                                          size: 48,
-                                          color: Colors.grey,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          '画像がありません',
-                                          style: TextStyle(color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                      ),
+                              ),
+                            ),
                           ),
-                        ),
+
+                          // 左右フリック機能
+                          if (widget.generationResult != null &&
+                              widget.generationResult!.imageCount > 1)
+                            GestureDetector(
+                              onHorizontalDragEnd: (details) {
+                                if (details.primaryVelocity! > 0) {
+                                  // 右から左へのスワイプ（前の画像）
+                                  _previousImage();
+                                } else if (details.primaryVelocity! < 0) {
+                                  // 左から右へのスワイプ（次の画像）
+                                  _nextImage();
+                                }
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: _isImageExpanded ? 400 : 300,
+                                color: Colors.transparent,
+                              ),
+                            ),
+
+                          // ナビゲーションボタン
+                          if (widget.generationResult != null &&
+                              widget.generationResult!.imageCount > 1)
+                            Positioned.fill(
+                              child: Row(
+                                children: [
+                                  // 前の画像ボタン
+                                  if (_currentImageIndex > 0)
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: _previousImage,
+                                        child: Container(
+                                          color: Colors.transparent,
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.chevron_left,
+                                              size: 32,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // 中央のスペース
+                                  const Expanded(flex: 2, child: SizedBox()),
+
+                                  // 次の画像ボタン
+                                  if (_currentImageIndex <
+                                      widget.generationResult!.imageCount - 1)
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: _nextImage,
+                                        child: Container(
+                                          color: Colors.transparent,
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.chevron_right,
+                                              size: 32,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+
+                          // 画像インデックス表示
+                          if (widget.generationResult != null &&
+                              widget.generationResult!.imageCount > 1)
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${_currentImageIndex + 1} / ${widget.generationResult!.imageCount}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
 
                       // 画像情報

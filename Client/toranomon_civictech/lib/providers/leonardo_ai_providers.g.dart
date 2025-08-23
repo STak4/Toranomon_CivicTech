@@ -6,7 +6,7 @@ part of 'leonardo_ai_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$leonardoApiKeyHash() => r'd3eae884185051187fe40798e323c036ea0ed000';
+String _$leonardoApiKeyHash() => r'd47c3f17c899beb0d028d6fa71b69b41f56858f9';
 
 /// Leonardo.ai APIキープロバイダー
 ///
@@ -72,7 +72,7 @@ final leonardoAiRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LeonardoAiRepositoryRef = AutoDisposeProviderRef<LeonardoAiRepository>;
-String _$imageGenerationHash() => r'43cd8c782b8cc369397c3fc9cb3f736eed9584cc';
+String _$imageGenerationHash() => r'e899fd36b70b5f43bb4d1720f61e4e1b3cfe151e';
 
 /// 画像生成プロバイダー
 ///
@@ -81,7 +81,10 @@ String _$imageGenerationHash() => r'43cd8c782b8cc369397c3fc9cb3f736eed9584cc';
 /// Copied from [ImageGeneration].
 @ProviderFor(ImageGeneration)
 final imageGenerationProvider =
-    AutoDisposeAsyncNotifierProvider<ImageGeneration, GeneratedImage?>.internal(
+    AutoDisposeAsyncNotifierProvider<
+      ImageGeneration,
+      GenerationResult?
+    >.internal(
       ImageGeneration.new,
       name: r'imageGenerationProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -91,7 +94,7 @@ final imageGenerationProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$ImageGeneration = AutoDisposeAsyncNotifier<GeneratedImage?>;
+typedef _$ImageGeneration = AutoDisposeAsyncNotifier<GenerationResult?>;
 String _$imageEditingHash() => r'd922a4fcbb9bc6fb70b75929e65bd848b628ebb8';
 
 /// 画像編集プロバイダー

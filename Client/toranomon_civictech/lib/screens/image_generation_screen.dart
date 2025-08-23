@@ -5,7 +5,7 @@ import '../providers/leonardo_ai_providers.dart';
 import '../widgets/prompt_input_widget.dart';
 import '../widgets/loading_overlay_widget.dart';
 import '../models/leonardo_ai/leonardo_ai_exception.dart';
-import '../models/leonardo_ai/generated_image.dart';
+import '../models/leonardo_ai/generation_result.dart';
 import '../utils/app_logger.dart';
 
 /// 画像生成画面
@@ -146,20 +146,22 @@ class _ImageGenerationScreenState extends ConsumerState<ImageGenerationScreen> {
     final imageGenerationState = ref.watch(imageGenerationProvider);
 
     // 生成完了時の処理
-    ref.listen<AsyncValue<GeneratedImage?>>(imageGenerationProvider, (
+    ref.listen<AsyncValue<GenerationResult?>>(imageGenerationProvider, (
       previous,
       next,
     ) {
       next.when(
-        data: (generatedImage) {
-          if (generatedImage != null && previous?.value != generatedImage) {
+        data: (generationResult) {
+          if (generationResult != null && previous?.value != generationResult) {
             AppLogger.i('画像生成が完了、結果画面に遷移');
-            _showSuccessSnackBar('画像生成が完了しました');
+            _showSuccessSnackBar(
+              '画像生成が完了しました (${generationResult.imageCount}枚)',
+            );
 
             // 結果画面に遷移
             context.goNamed(
               'leonardo-ai-result',
-              extra: {'generatedImage': generatedImage},
+              extra: {'generationResult': generationResult},
             );
           }
         },
@@ -242,6 +244,13 @@ class _ImageGenerationScreenState extends ConsumerState<ImageGenerationScreen> {
                     setState(() {
                       _prompt = value;
                     });
+                  },
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty &&
+                        !_isGenerating &&
+                        !imageGenerationState.isLoading) {
+                      _generateImage();
+                    }
                   },
                   hintText:
                       '生成したい画像の説明を入力してください...\n例: 美しい夕日の海辺、猫が遊んでいる公園、未来都市の風景',

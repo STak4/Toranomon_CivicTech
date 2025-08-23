@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../models/leonardo_ai/leonardo_ai_exception.dart';
 import '../../models/leonardo_ai/generation_request.dart';
 import '../../models/leonardo_ai/generation_response.dart';
+import '../../models/leonardo_ai/generation_job_response.dart';
 import '../../models/leonardo_ai/edit_request.dart';
 import '../../models/leonardo_ai/edit_response.dart';
 import '../../utils/app_logger.dart';
@@ -14,12 +15,11 @@ import 'result.dart';
 ///
 /// API通信とエラーハンドリングを統合したサービスクラス
 class LeonardoAiService {
-  late final LeonardoAiApiClient _apiClient;
   late final Dio _dio;
+  bool _isDisposed = false;
 
   LeonardoAiService() {
     _dio = DioConfig.createDio();
-    _apiClient = LeonardoAiApiClient(_dio);
     AppLogger.i('LeonardoAiServiceを初期化しました');
   }
 
@@ -28,27 +28,47 @@ class LeonardoAiService {
   /// [request] 画像生成リクエスト
   /// [cancelToken] キャンセルトークン（オプション）
   /// Returns 生成結果またはエラー
-  Future<Result<GenerationResponse, LeonardoAiException>> generateImage(
+  Future<Result<GenerationJobResponse, LeonardoAiException>> generateImage(
     GenerationRequest request, {
     CancelToken? cancelToken,
   }) async {
+    if (_isDisposed) {
+      return Result.failure(
+        const LeonardoAiException.unknownError('サービスが既に破棄されています'),
+      );
+    }
+
+    Dio? dio;
     try {
       AppLogger.i('画像生成を開始: ${request.prompt}');
 
-      // キャンセルトークンをDioオプションに設定
+      // 新しいDioインスタンスを作成（接続の問題を回避）
+      dio = DioConfig.createDio();
+      final apiClient = LeonardoAiApiClient(dio);
+
+      // キャンセルトークンを設定
       if (cancelToken != null) {
-        _dio.options.extra['cancelToken'] = cancelToken;
+        dio.options.extra['cancelToken'] = cancelToken;
       }
 
-      final response = await _apiClient.generateImage(request);
+      final response = await apiClient.generateImage(request);
 
-      AppLogger.i('画像生成が完了: ${response.generationId}');
+      // 使用後にDioを閉じる
+      dio.close();
+
+      AppLogger.i('画像生成ジョブが作成されました: ${response.generationId}');
       return Result.success(response);
     } on DioException catch (e) {
+      // Dioを閉じる
+      dio?.close();
+
       final error = ErrorHandler.handleDioError(e);
       AppLogger.e('画像生成でエラーが発生: $error');
       return Result.failure(error);
     } catch (e, stackTrace) {
+      // Dioを閉じる
+      dio?.close();
+
       final error = ErrorHandler.handleGenericError(e, stackTrace);
       AppLogger.e('画像生成で予期しないエラーが発生: $error');
       return Result.failure(error);
@@ -66,15 +86,28 @@ class LeonardoAiService {
     EditRequest request, {
     CancelToken? cancelToken,
   }) async {
+    if (_isDisposed) {
+      return Result.failure(
+        const LeonardoAiException.unknownError('サービスが既に破棄されています'),
+      );
+    }
+
     try {
       AppLogger.i('画像編集を開始: $id - ${request.prompt}');
 
-      // キャンセルトークンをDioオプションに設定
+      // 新しいDioインスタンスを作成（接続の問題を回避）
+      final dio = DioConfig.createDio();
+      final apiClient = LeonardoAiApiClient(dio);
+
+      // キャンセルトークンを設定
       if (cancelToken != null) {
-        _dio.options.extra['cancelToken'] = cancelToken;
+        dio.options.extra['cancelToken'] = cancelToken;
       }
 
-      final response = await _apiClient.editImage(id, request);
+      final response = await apiClient.editImage(id, request);
+
+      // 使用後にDioを閉じる
+      dio.close();
 
       AppLogger.i('画像編集が完了: ${response.generationId}');
       return Result.success(response);
@@ -98,15 +131,33 @@ class LeonardoAiService {
     String id, {
     CancelToken? cancelToken,
   }) async {
+    // 一時的に_isDisposedチェックを無効化（デバッグ用）
+    // if (_isDisposed) {
+    //   AppLogger.e('サービスが既に破棄されています: $id');
+    //   return Result.failure(
+    //     const LeonardoAiException.unknownError('サービスが既に破棄されています'),
+    //   );
+    // }
+
     try {
       AppLogger.d('生成状況を確認: $id');
+      AppLogger.i(
+        'GET API呼び出し: https://cloud.leonardo.ai/api/rest/v1/generations/$id',
+      );
 
-      // キャンセルトークンをDioオプションに設定
+      // 新しいDioインスタンスを作成（接続の問題を回避）
+      final dio = DioConfig.createDio();
+      final apiClient = LeonardoAiApiClient(dio);
+
+      // キャンセルトークンを設定
       if (cancelToken != null) {
-        _dio.options.extra['cancelToken'] = cancelToken;
+        dio.options.extra['cancelToken'] = cancelToken;
       }
 
-      final response = await _apiClient.getGenerationStatus(id);
+      final response = await apiClient.getGenerationStatus(id);
+
+      // 使用後にDioを閉じる
+      dio.close();
 
       AppLogger.d('生成状況を取得: ${response.generationId}');
       return Result.success(response);
@@ -135,7 +186,10 @@ class LeonardoAiService {
 
   /// リソースの解放
   void dispose() {
-    _dio.close();
-    AppLogger.i('LeonardoAiServiceのリソースを解放しました');
+    if (!_isDisposed) {
+      _dio.close();
+      _isDisposed = true;
+      AppLogger.i('LeonardoAiServiceのリソースを解放しました');
+    }
   }
 }

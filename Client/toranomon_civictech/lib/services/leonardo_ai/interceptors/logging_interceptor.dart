@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../utils/app_logger.dart';
 
 /// HTTP通信ログ出力用インターセプター
-/// 
+///
 /// リクエスト・レスポンスの詳細をログに出力
 class LoggingInterceptor extends Interceptor {
   @override
@@ -12,7 +12,7 @@ class LoggingInterceptor extends Interceptor {
       'Headers: ${_sanitizeHeaders(options.headers)}\n'
       'Data: ${_sanitizeData(options.data)}',
     );
-    
+
     handler.next(options);
   }
 
@@ -24,7 +24,7 @@ class LoggingInterceptor extends Interceptor {
       'Headers: ${response.headers.map}\n'
       'Data: ${_truncateData(response.data)}',
     );
-    
+
     handler.next(response);
   }
 
@@ -35,16 +35,18 @@ class LoggingInterceptor extends Interceptor {
       'URL: ${err.requestOptions.uri}\n'
       'Status Code: ${err.response?.statusCode}\n'
       'Message: ${err.message}\n'
-      'Response Data: ${err.response?.data}',
+      'Error: ${err.error}\n'
+      'Response Data: ${err.response?.data}\n'
+      'Request Headers: ${_sanitizeHeaders(err.requestOptions.headers)}',
     );
-    
+
     handler.next(err);
   }
 
   /// ヘッダーから機密情報を除去
   Map<String, dynamic> _sanitizeHeaders(Map<String, dynamic> headers) {
     final sanitized = Map<String, dynamic>.from(headers);
-    
+
     // Authorizationヘッダーをマスク
     if (sanitized.containsKey('Authorization')) {
       final auth = sanitized['Authorization'] as String;
@@ -52,7 +54,7 @@ class LoggingInterceptor extends Interceptor {
         sanitized['Authorization'] = 'Bearer ***';
       }
     }
-    
+
     return sanitized;
   }
 
@@ -60,7 +62,7 @@ class LoggingInterceptor extends Interceptor {
   dynamic _sanitizeData(dynamic data) {
     if (data is Map) {
       final sanitized = Map.from(data);
-      
+
       // APIキーなどの機密情報をマスク
       const sensitiveKeys = ['api_key', 'apiKey', 'token', 'password'];
       for (final key in sensitiveKeys) {
@@ -68,10 +70,10 @@ class LoggingInterceptor extends Interceptor {
           sanitized[key] = '***';
         }
       }
-      
+
       return sanitized;
     }
-    
+
     return data;
   }
 
@@ -79,11 +81,11 @@ class LoggingInterceptor extends Interceptor {
   String _truncateData(dynamic data) {
     const maxLength = 1000;
     final dataString = data.toString();
-    
+
     if (dataString.length <= maxLength) {
       return dataString;
     }
-    
+
     return '${dataString.substring(0, maxLength)}... (truncated)';
   }
 }

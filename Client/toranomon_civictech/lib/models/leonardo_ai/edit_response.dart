@@ -1,5 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'generation_response.dart';
+import 'generated_image_data.dart';
 
 part 'edit_response.g.dart';
 

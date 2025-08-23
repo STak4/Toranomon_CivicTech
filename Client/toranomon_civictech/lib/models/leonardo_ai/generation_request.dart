@@ -5,17 +5,15 @@ part 'generation_request.g.dart';
 @JsonSerializable()
 class GenerationRequest {
   final String prompt;
-  final int numImages;
   final int width;
   final int height;
   final String modelId;
 
   const GenerationRequest({
     required this.prompt,
-    this.numImages = 1,
     this.width = 512,
     this.height = 512,
-    this.modelId = "LEONARDO_DIFFUSION_XL",
+    this.modelId = "1e60896f-3c26-4296-8ecc-53e2afecc132",
   });
 
   factory GenerationRequest.fromJson(Map<String, dynamic> json) =>
@@ -25,14 +23,12 @@ class GenerationRequest {
 
   GenerationRequest copyWith({
     String? prompt,
-    int? numImages,
     int? width,
     int? height,
     String? modelId,
   }) {
     return GenerationRequest(
       prompt: prompt ?? this.prompt,
-      numImages: numImages ?? this.numImages,
       width: width ?? this.width,
       height: height ?? this.height,
       modelId: modelId ?? this.modelId,
@@ -44,7 +40,6 @@ class GenerationRequest {
     if (identical(this, other)) return true;
     return other is GenerationRequest &&
         other.prompt == prompt &&
-        other.numImages == numImages &&
         other.width == width &&
         other.height == height &&
         other.modelId == modelId;
@@ -53,7 +48,6 @@ class GenerationRequest {
   @override
   int get hashCode {
     return prompt.hashCode ^
-        numImages.hashCode ^
         width.hashCode ^
         height.hashCode ^
         modelId.hashCode;
@@ -61,6 +55,6 @@ class GenerationRequest {
 
   @override
   String toString() {
-    return 'GenerationRequest(prompt: $prompt, numImages: $numImages, width: $width, height: $height, modelId: $modelId)';
+    return 'GenerationRequest(prompt: $prompt, width: $width, height: $height, modelId: $modelId)';
   }
 }

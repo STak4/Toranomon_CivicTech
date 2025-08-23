@@ -1,83 +1,30 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'generation_data.dart';
+import 'generated_image_data.dart';
 
 part 'generation_response.g.dart';
 
 @JsonSerializable()
-class GeneratedImageData {
-  final String id;
-  final String url;
-  final String? nsfw;
-  final String? likelyGender;
-
-  const GeneratedImageData({
-    required this.id,
-    required this.url,
-    this.nsfw,
-    this.likelyGender,
-  });
-
-  factory GeneratedImageData.fromJson(Map<String, dynamic> json) =>
-      _$GeneratedImageDataFromJson(json);
-
-  Map<String, dynamic> toJson() => _$GeneratedImageDataToJson(this);
-
-  GeneratedImageData copyWith({
-    String? id,
-    String? url,
-    String? nsfw,
-    String? likelyGender,
-  }) {
-    return GeneratedImageData(
-      id: id ?? this.id,
-      url: url ?? this.url,
-      nsfw: nsfw ?? this.nsfw,
-      likelyGender: likelyGender ?? this.likelyGender,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is GeneratedImageData &&
-        other.id == id &&
-        other.url == url &&
-        other.nsfw == nsfw &&
-        other.likelyGender == likelyGender;
-  }
-
-  @override
-  int get hashCode {
-    return id.hashCode ^ url.hashCode ^ nsfw.hashCode ^ likelyGender.hashCode;
-  }
-
-  @override
-  String toString() {
-    return 'GeneratedImageData(id: $id, url: $url, nsfw: $nsfw, likelyGender: $likelyGender)';
-  }
-}
-
-@JsonSerializable()
 class GenerationResponse {
-  final String generationId;
-  final List<GeneratedImageData> generatedImages;
+  @JsonKey(name: 'generations_by_pk')
+  final GenerationData? generationsByPk;
 
-  const GenerationResponse({
-    required this.generationId,
-    required this.generatedImages,
-  });
+  const GenerationResponse({this.generationsByPk});
 
   factory GenerationResponse.fromJson(Map<String, dynamic> json) =>
       _$GenerationResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$GenerationResponseToJson(this);
 
-  GenerationResponse copyWith({
-    String? generationId,
-    List<GeneratedImageData>? generatedImages,
-  }) {
+  // 便利メソッド
+  String get generationId => generationsByPk?.id ?? '';
+  List<GeneratedImageData> get generatedImages =>
+      generationsByPk?.generatedImages ?? [];
+  String get status => generationsByPk?.status ?? '';
+
+  GenerationResponse copyWith({GenerationData? generationsByPk}) {
     return GenerationResponse(
-      generationId: generationId ?? this.generationId,
-      generatedImages: generatedImages ?? this.generatedImages,
+      generationsByPk: generationsByPk ?? this.generationsByPk,
     );
   }
 
@@ -85,17 +32,16 @@ class GenerationResponse {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is GenerationResponse &&
-        other.generationId == generationId &&
-        other.generatedImages == generatedImages;
+        other.generationsByPk == generationsByPk;
   }
 
   @override
   int get hashCode {
-    return generationId.hashCode ^ generatedImages.hashCode;
+    return generationsByPk.hashCode;
   }
 
   @override
   String toString() {
-    return 'GenerationResponse(generationId: $generationId, generatedImages: $generatedImages)';
+    return 'GenerationResponse(generationsByPk: $generationsByPk)';
   }
 }

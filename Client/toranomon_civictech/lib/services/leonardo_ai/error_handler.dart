@@ -41,7 +41,7 @@ class ErrorHandler {
       ),
 
       DioExceptionType.unknown => LeonardoAiException.unknownError(
-        '予期しないエラーが発生しました: ${error.message ?? "不明なエラー"}',
+        '予期しないエラーが発生しました: ${error.message ?? "不明なエラー"} (Error: ${error.error})',
       ),
     };
   }

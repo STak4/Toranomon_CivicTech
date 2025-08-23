@@ -4,6 +4,7 @@ import '../models/leonardo_ai/generated_image.dart';
 import '../models/leonardo_ai/edited_image.dart';
 import '../models/leonardo_ai/generation_request.dart';
 import '../models/leonardo_ai/generation_response.dart';
+import '../models/leonardo_ai/generation_result.dart';
 import '../models/leonardo_ai/edit_request.dart';
 
 import '../models/leonardo_ai/leonardo_ai_exception.dart';
@@ -27,7 +28,7 @@ class LeonardoAiRepository {
   /// [prompt] 画像生成用のテキストプロンプト
   /// [cancelToken] リクエストキャンセル用トークン（オプション）
   /// Returns 生成された画像情報またはエラー
-  Future<Result<GeneratedImage, LeonardoAiException>> generateImage(
+  Future<Result<GenerationResult, LeonardoAiException>> generateImage(
     String prompt, {
     CancelToken? cancelToken,
   }) async {
@@ -44,38 +45,88 @@ class LeonardoAiRepository {
       // 生成リクエストを作成
       final request = GenerationRequest(
         prompt: prompt.trim(),
-        numImages: 1,
         width: 512,
         height: 512,
-        modelId: "LEONARDO_DIFFUSION_XL",
+        modelId: "1e60896f-3c26-4296-8ecc-53e2afecc132",
       );
 
-      // API呼び出し
-      final result = await _service.generateImage(
+      // 1. 生成ジョブを作成
+      final jobResult = await _service.generateImage(
         request,
         cancelToken: cancelToken,
       );
 
-      return result.flatMap((response) {
-        // レスポンスから最初の画像を取得
-        if (response.generatedImages.isEmpty) {
-          return const Result.failure(
-            LeonardoAiException.apiError(500, '画像が生成されませんでした'),
-          );
+      if (jobResult.isFailure) {
+        return Result.failure(jobResult.error);
+      }
+
+      final jobResponse = jobResult.data;
+      AppLogger.i('生成ジョブが作成されました: ${jobResponse.generationId}');
+
+      // 2. 生成状況を確認（最大30秒待機）
+      const maxAttempts = 30;
+      const delaySeconds = 1;
+
+      for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        await Future.delayed(Duration(seconds: delaySeconds));
+
+        AppLogger.d('GET API呼び出し開始: ${jobResponse.generationId}');
+        final statusResult = await _service.getGenerationStatus(
+          jobResponse.generationId,
+          cancelToken: cancelToken,
+        );
+        AppLogger.d('GET API呼び出し完了: ${statusResult.isSuccess ? '成功' : '失敗'}');
+
+        if (statusResult.isSuccess) {
+          final statusResponse = statusResult.data;
+
+          // 生成が完了したかチェック
+          if (statusResponse.status == 'COMPLETE' &&
+              statusResponse.generatedImages.isNotEmpty) {
+            // 複数の画像をGeneratedImageオブジェクトに変換
+            final generatedImages = statusResponse.generatedImages.map((
+              imageData,
+            ) {
+              return GeneratedImage(
+                id: imageData.id,
+                url: imageData.url,
+                prompt: prompt.trim(),
+                createdAt: DateTime.now(),
+                status: ImageStatus.completed,
+              );
+            }).toList();
+
+            final generationResult = GenerationResult(
+              generationId: statusResponse.generationId,
+              prompt: prompt.trim(),
+              createdAt: DateTime.now(),
+              images: generatedImages,
+            );
+
+            AppLogger.i(
+              '画像生成が完了: ${generationResult.generationId} (画像数: ${generationResult.imageCount})',
+            );
+            return Result.success(generationResult);
+          } else if (statusResponse.status == 'FAILED') {
+            AppLogger.e('画像生成が失敗しました: ${statusResponse.generationId}');
+            return const Result.failure(
+              LeonardoAiException.apiError(500, '画像生成に失敗しました'),
+            );
+          }
+
+          AppLogger.d('生成中... ステータス: ${statusResponse.status}');
+        } else {
+          // GET APIが失敗した場合のエラーログ
+          AppLogger.e('生成状況確認でエラーが発生: ${statusResult.error}');
+          return Result.failure(statusResult.error);
         }
 
-        final imageData = response.generatedImages.first;
-        final generatedImage = GeneratedImage(
-          id: response.generationId,
-          url: imageData.url,
-          prompt: prompt.trim(),
-          createdAt: DateTime.now(),
-          status: ImageStatus.completed,
-        );
+        AppLogger.d('生成状況確認中... (${attempt + 1}/$maxAttempts)');
+      }
 
-        AppLogger.i('画像生成が完了: ${generatedImage.id}');
-        return Result.success(generatedImage);
-      });
+      return const Result.failure(
+        LeonardoAiException.apiError(500, '画像生成がタイムアウトしました'),
+      );
     } catch (e, stackTrace) {
       AppLogger.e('画像生成で予期しないエラー: $e', e, stackTrace);
       return Result.failure(

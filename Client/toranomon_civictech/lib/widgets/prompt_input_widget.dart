@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// プロンプト入力フィールドウィジェット
-/// 
+///
 /// Leonard AI機能で使用する共通のプロンプト入力コンポーネント
 /// 文字数制限、バリデーション、クリアボタンなどの機能を提供
 class PromptInputWidget extends StatefulWidget {
@@ -19,25 +19,25 @@ class PromptInputWidget extends StatefulWidget {
 
   /// テキスト変更時のコールバック
   final ValueChanged<String> onChanged;
-  
+
   /// 送信時のコールバック（Enterキー押下時など）
   final ValueChanged<String>? onSubmitted;
-  
+
   /// ヒントテキスト
   final String hintText;
-  
+
   /// 最大文字数
   final int maxLength;
-  
+
   /// 最小行数
   final int minLines;
-  
+
   /// 最大行数
   final int maxLines;
-  
+
   /// 入力可能かどうか
   final bool enabled;
-  
+
   /// 初期値
   final String? initialValue;
 
@@ -54,7 +54,7 @@ class _PromptInputWidgetState extends State<PromptInputWidget> {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
     _focusNode = FocusNode();
-    
+
     _controller.addListener(() {
       widget.onChanged(_controller.text);
     });
@@ -109,25 +109,21 @@ class _PromptInputWidgetState extends State<PromptInputWidget> {
               minLines: widget.minLines,
               maxLines: widget.maxLines,
               maxLength: widget.maxLength,
-              textInputAction: TextInputAction.newline,
-              onSubmitted: widget.onSubmitted,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (value) {
+                _focusNode.unfocus(); // キーボードを閉じる
+                widget.onSubmitted?.call(value);
+              },
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                hintStyle: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Colors.grey[300]!,
-                  ),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Colors.grey[300]!,
-                  ),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -138,14 +134,10 @@ class _PromptInputWidgetState extends State<PromptInputWidget> {
                 ),
                 disabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Colors.grey[200]!,
-                  ),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
                 ),
                 filled: true,
-                fillColor: widget.enabled 
-                    ? Colors.grey[50] 
-                    : Colors.grey[100],
+                fillColor: widget.enabled ? Colors.grey[50] : Colors.grey[100],
                 contentPadding: const EdgeInsets.all(16),
               ),
               style: const TextStyle(fontSize: 16),
@@ -154,18 +146,11 @@ class _PromptInputWidgetState extends State<PromptInputWidget> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     '${_controller.text.length}/${widget.maxLength}文字',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),

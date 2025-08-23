@@ -25,7 +25,7 @@ final cameraRepositoryProvider = AutoDisposeProvider<CameraRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CameraRepositoryRef = AutoDisposeProviderRef<CameraRepository>;
-String _$cameraNotifierHash() => r'3e71c62c3e5d323ede9fbb09d4ea58d68f5376ad';
+String _$cameraNotifierHash() => r'58eaeb432c183f8fa605ba0bec9b188cd9249819';
 
 /// カメラ状態管理のプロバイダー
 ///
