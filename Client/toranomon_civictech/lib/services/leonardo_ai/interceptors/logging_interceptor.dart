@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../utils/app_logger.dart';
+import 'dart:convert'; // Added for JsonEncoder
 
 /// HTTP通信ログ出力用インターセプター
 ///
@@ -7,10 +8,10 @@ import '../../../utils/app_logger.dart';
 class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    AppLogger.d(
-      'HTTP Request: ${options.method} ${options.uri}\n'
-      'Headers: ${_sanitizeHeaders(options.headers)}\n'
-      'Data: ${_sanitizeData(options.data)}',
+    AppLogger.i(
+      '🚀 API Request: ${options.method} ${options.uri}\n'
+      '📋 Headers: ${_sanitizeHeaders(options.headers)}\n'
+      '📦 Request Body: ${_formatJsonData(options.data)}',
     );
 
     handler.next(options);
@@ -18,11 +19,11 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    AppLogger.d(
-      'HTTP Response: ${response.statusCode} ${response.statusMessage}\n'
-      'URL: ${response.requestOptions.uri}\n'
-      'Headers: ${response.headers.map}\n'
-      'Data: ${_truncateData(response.data)}',
+    AppLogger.i(
+      '✅ API Response: ${response.statusCode} ${response.statusMessage}\n'
+      '🔗 URL: ${response.requestOptions.uri}\n'
+      '📋 Response Headers: ${response.headers.map}\n'
+      '📦 Response Body: ${_formatJsonData(response.data)}',
     );
 
     handler.next(response);
@@ -31,13 +32,13 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     AppLogger.e(
-      'HTTP Error: ${err.type}\n'
-      'URL: ${err.requestOptions.uri}\n'
-      'Status Code: ${err.response?.statusCode}\n'
-      'Message: ${err.message}\n'
-      'Error: ${err.error}\n'
-      'Response Data: ${err.response?.data}\n'
-      'Request Headers: ${_sanitizeHeaders(err.requestOptions.headers)}',
+      '❌ API Error: ${err.type}\n'
+      '🔗 URL: ${err.requestOptions.uri}\n'
+      '📊 Status Code: ${err.response?.statusCode}\n'
+      '💬 Error Message: ${err.message}\n'
+      '🔍 Error Details: ${err.error}\n'
+      '📦 Error Response: ${_formatJsonData(err.response?.data)}\n'
+      '📋 Request Headers: ${_sanitizeHeaders(err.requestOptions.headers)}',
     );
 
     handler.next(err);
@@ -77,15 +78,34 @@ class LoggingInterceptor extends Interceptor {
     return data;
   }
 
-  /// データを適切な長さに切り詰め
-  String _truncateData(dynamic data) {
-    const maxLength = 1000;
-    final dataString = data.toString();
-
-    if (dataString.length <= maxLength) {
-      return dataString;
+  /// JSONデータを整形して表示
+  String _formatJsonData(dynamic data) {
+    if (data == null) {
+      return 'null';
     }
 
-    return '${dataString.substring(0, maxLength)}... (truncated)';
+    // 機密情報を除去
+    final sanitizedData = _sanitizeData(data);
+
+    try {
+      // JSONとして整形
+      if (sanitizedData is Map || sanitizedData is List) {
+        const encoder = JsonEncoder.withIndent('  ');
+        final jsonString = encoder.convert(sanitizedData);
+
+        // 長すぎる場合は切り詰め
+        const maxLength = 2000;
+        if (jsonString.length <= maxLength) {
+          return jsonString;
+        }
+
+        return '${jsonString.substring(0, maxLength)}... (truncated)';
+      }
+
+      return sanitizedData.toString();
+    } catch (e) {
+      // JSON変換に失敗した場合は文字列として返す
+      return sanitizedData.toString();
+    }
   }
 }

@@ -27,9 +27,9 @@ class DioConfig {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      // デバッグ用の設定を追加
+      // 正常なステータスコードのみを許可
       validateStatus: (status) {
-        return status != null && status < 500;
+        return status != null && status >= 200 && status < 300;
       },
     );
 

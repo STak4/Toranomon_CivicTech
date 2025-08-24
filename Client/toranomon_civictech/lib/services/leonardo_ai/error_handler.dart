@@ -17,13 +17,13 @@ class ErrorHandler {
       // タイムアウト系エラー
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout => const LeonardoAiException.networkError(
+      DioExceptionType.receiveTimeout => LeonardoAiException.networkError(
         '通信がタイムアウトしました。ネットワーク接続を確認してください。',
       ),
 
       // 接続エラー
       DioExceptionType.connectionError =>
-        const LeonardoAiException.networkError(
+        LeonardoAiException.networkError(
           'ネットワークに接続できません。インターネット接続を確認してください。',
         ),
 
@@ -31,12 +31,12 @@ class ErrorHandler {
       DioExceptionType.badResponse => _handleHttpError(error),
 
       // キャンセルエラー
-      DioExceptionType.cancel => const LeonardoAiException.unknownError(
+      DioExceptionType.cancel => LeonardoAiException.unknownError(
         'リクエストがキャンセルされました',
       ),
 
       // その他のエラー
-      DioExceptionType.badCertificate => const LeonardoAiException.networkError(
+      DioExceptionType.badCertificate => LeonardoAiException.networkError(
         'SSL証明書エラーが発生しました',
       ),
 
@@ -55,17 +55,17 @@ class ErrorHandler {
 
     return switch (statusCode) {
       // 認証エラー
-      401 => const LeonardoAiException.authenticationError(
+      401 => LeonardoAiException.authenticationError(
         'APIキーが無効または期限切れです。設定を確認してください。',
       ),
 
       // 権限エラー
-      403 => const LeonardoAiException.authenticationError(
+      403 => LeonardoAiException.authenticationError(
         'このAPIにアクセスする権限がありません。',
       ),
 
       // リソースが見つからない
-      404 => const LeonardoAiException.apiError(404, '指定されたリソースが見つかりません。'),
+      404 => LeonardoAiException.apiError(404, '指定されたリソースが見つかりません。'),
 
       // レート制限
       429 => _handleRateLimitError(error),

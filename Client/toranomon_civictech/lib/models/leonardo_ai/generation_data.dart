@@ -7,7 +7,7 @@ part 'generation_data.g.dart';
 class GenerationData {
   @JsonKey(name: 'generated_images')
   final List<GeneratedImageData> generatedImages;
-  final String modelId;
+  final String? modelId;
   final String? motion;
   final String? motionModel;
   final String? motionStrength;

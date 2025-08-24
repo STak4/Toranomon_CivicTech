@@ -228,6 +228,172 @@ class PermissionUtils {
     }
   }
 
+  /// 権限の状態を詳細に取得
+  static Future<Map<String, dynamic>> getPermissionStatusDetails() async {
+    try {
+      final details = <String, dynamic>{};
+      
+      if (Platform.isIOS) {
+        final photosAddOnlyStatus = await Permission.photosAddOnly.status;
+        final photosStatus = await Permission.photos.status;
+        
+        details['platform'] = 'iOS';
+        details['photosAddOnly'] = {
+          'status': photosAddOnlyStatus.name,
+          'isGranted': photosAddOnlyStatus.isGranted,
+          'isDenied': photosAddOnlyStatus.isDenied,
+          'isPermanentlyDenied': photosAddOnlyStatus.isPermanentlyDenied,
+          'isRestricted': photosAddOnlyStatus.isRestricted,
+        };
+        details['photos'] = {
+          'status': photosStatus.name,
+          'isGranted': photosStatus.isGranted,
+          'isDenied': photosStatus.isDenied,
+          'isPermanentlyDenied': photosStatus.isPermanentlyDenied,
+          'isLimited': photosStatus.isLimited,
+          'isRestricted': photosStatus.isRestricted,
+        };
+        details['canSave'] = photosAddOnlyStatus.isGranted || photosStatus.isGranted;
+        details['needsSettings'] = photosAddOnlyStatus.isPermanentlyDenied || photosStatus.isPermanentlyDenied;
+      } else if (Platform.isAndroid) {
+        final isAndroid13Plus = await _isAndroid13OrHigher();
+        details['platform'] = 'Android';
+        details['isAndroid13Plus'] = isAndroid13Plus;
+        
+        if (isAndroid13Plus) {
+          final photosStatus = await Permission.photos.status;
+          details['photos'] = {
+            'status': photosStatus.name,
+            'isGranted': photosStatus.isGranted,
+            'isDenied': photosStatus.isDenied,
+            'isPermanentlyDenied': photosStatus.isPermanentlyDenied,
+          };
+          details['canSave'] = photosStatus.isGranted;
+          details['needsSettings'] = photosStatus.isPermanentlyDenied;
+        } else {
+          final storageStatus = await Permission.storage.status;
+          details['storage'] = {
+            'status': storageStatus.name,
+            'isGranted': storageStatus.isGranted,
+            'isDenied': storageStatus.isDenied,
+            'isPermanentlyDenied': storageStatus.isPermanentlyDenied,
+          };
+          details['canSave'] = storageStatus.isGranted;
+          details['needsSettings'] = storageStatus.isPermanentlyDenied;
+        }
+      }
+      
+      return details;
+    } catch (e) {
+      AppLogger.e('権限状態詳細取得でエラー: $e');
+      return {'error': e.toString()};
+    }
+  }
+
+  /// 権限要求のガイダンスメッセージを取得
+  static Future<String> getPermissionGuidanceMessage() async {
+    try {
+      final details = await getPermissionStatusDetails();
+      
+      if (details['platform'] == 'iOS') {
+        final photosAddOnly = details['photosAddOnly'] as Map<String, dynamic>?;
+        final photos = details['photos'] as Map<String, dynamic>?;
+        
+        if (photosAddOnly?['isPermanentlyDenied'] == true || photos?['isPermanentlyDenied'] == true) {
+          return '写真保存権限が拒否されています。\n\n'
+              '設定方法：\n'
+              '1. 設定アプリを開く\n'
+              '2. プライバシーとセキュリティ > 写真\n'
+              '3. Toranomon Civictech を選択\n'
+              '4. 「すべての写真」または「写真を追加」を選択\n\n'
+              '設定後、アプリを再起動してください。';
+        } else if (photos?['isLimited'] == true) {
+          return '写真ライブラリが「プライベートアクセス」に設定されています。\n\n'
+              '写真を保存するには：\n'
+              '1. 設定アプリ > プライバシーとセキュリティ > 写真\n'
+              '2. Toranomon Civictech を選択\n'
+              '3. 「すべての写真」または「写真を追加」を選択';
+        } else {
+          return '写真を保存するために、ギャラリーへのアクセス権限が必要です。\n\n'
+              '権限要求ダイアログで「許可」または「写真を追加」を選択してください。';
+        }
+      } else if (details['platform'] == 'Android') {
+        final needsSettings = details['needsSettings'] as bool? ?? false;
+        
+        if (needsSettings) {
+          return '写真保存権限が拒否されています。\n\n'
+              '設定方法：\n'
+              '1. 設定アプリを開く\n'
+              '2. アプリ > Toranomon Civictech\n'
+              '3. 権限 > 写真とメディア（またはストレージ）\n'
+              '4. 「許可」を選択\n\n'
+              '設定後、アプリを再起動してください。';
+        } else {
+          return '写真を保存するために、ストレージへのアクセス権限が必要です。\n\n'
+              '権限要求ダイアログで「許可」を選択してください。';
+        }
+      }
+      
+      return '写真を保存するために権限が必要です。権限要求ダイアログで「許可」を選択してください。';
+    } catch (e) {
+      AppLogger.e('権限ガイダンスメッセージ取得でエラー: $e');
+      return '写真を保存するために権限が必要です。設定アプリで権限を許可してください。';
+    }
+  }
+
+  /// 権限が永続的に拒否されているかチェック
+  static Future<bool> isPermissionPermanentlyDenied() async {
+    try {
+      if (Platform.isIOS) {
+        final photosAddOnlyStatus = await Permission.photosAddOnly.status;
+        final photosStatus = await Permission.photos.status;
+        return photosAddOnlyStatus.isPermanentlyDenied || photosStatus.isPermanentlyDenied;
+      } else if (Platform.isAndroid) {
+        if (await _isAndroid13OrHigher()) {
+          final photosStatus = await Permission.photos.status;
+          return photosStatus.isPermanentlyDenied;
+        } else {
+          final storageStatus = await Permission.storage.status;
+          return storageStatus.isPermanentlyDenied;
+        }
+      }
+      return false;
+    } catch (e) {
+      AppLogger.e('永続拒否チェックでエラー: $e');
+      return false;
+    }
+  }
+
+  /// 権限要求の結果を詳細に解析
+  static Future<Map<String, dynamic>> analyzePermissionRequest() async {
+    try {
+      AppLogger.i('権限要求の詳細解析を開始');
+      
+      final beforeDetails = await getPermissionStatusDetails();
+      AppLogger.d('権限要求前の状態: $beforeDetails');
+      
+      final hasPermission = await requestPhotoLibraryPermission();
+      
+      final afterDetails = await getPermissionStatusDetails();
+      AppLogger.d('権限要求後の状態: $afterDetails');
+      
+      return {
+        'success': hasPermission,
+        'beforeStatus': beforeDetails,
+        'afterStatus': afterDetails,
+        'needsSettings': await isPermissionPermanentlyDenied(),
+        'guidanceMessage': await getPermissionGuidanceMessage(),
+      };
+    } catch (e) {
+      AppLogger.e('権限要求解析でエラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'guidanceMessage': await getPermissionGuidanceMessage(),
+      };
+    }
+  }
+
   /// 権限が永続的に拒否された場合の対処法を案内
   static Future<void> showPermissionDeniedDialog() async {
     try {
