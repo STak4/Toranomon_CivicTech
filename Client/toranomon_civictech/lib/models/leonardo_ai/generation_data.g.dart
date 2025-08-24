@@ -12,7 +12,7 @@ GenerationData _$GenerationDataFromJson(
   generatedImages: (json['generated_images'] as List<dynamic>)
       .map((e) => GeneratedImageData.fromJson(e as Map<String, dynamic>))
       .toList(),
-  modelId: json['modelId'] as String,
+  modelId: json['modelId'] as String?,
   motion: json['motion'] as String?,
   motionModel: json['motionModel'] as String?,
   motionStrength: json['motionStrength'] as String?,

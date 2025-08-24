@@ -17,6 +17,7 @@ import '../screens/image_result_screen.dart';
 import '../models/leonardo_ai/generated_image.dart';
 import '../models/leonardo_ai/edited_image.dart';
 import '../models/leonardo_ai/generation_result.dart';
+import '../models/leonardo_ai/inpainting_result.dart';
 import '../utils/app_logger.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -115,6 +116,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     editedImage: extra?['editedImage'] as EditedImage?,
                     generationResult:
                         extra?['generationResult'] as GenerationResult?,
+                    inpaintingResult: extra?['inpaintingResult'] as InpaintingResult?,
                   );
                 },
               ),

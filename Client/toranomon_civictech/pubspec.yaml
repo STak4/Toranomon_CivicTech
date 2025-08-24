@@ -89,6 +89,7 @@ dependencies:
   supabase:
   supabase_flutter:
   device_info_plus:
+  path_provider:
   flutter_unity_widget:
     git:
       url: https://github.com/juicycleff/flutter-unity-view-widget.git

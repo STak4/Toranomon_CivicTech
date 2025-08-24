@@ -136,7 +136,12 @@ class _ImageGenerationScreenState extends ConsumerState<ImageGenerationScreen> {
       AuthenticationError() => 'APIキーが無効です。設定を確認してください。',
       RateLimitError() => 'API制限に達しました。しばらく待ってから再試行してください。',
       ValidationError() => error.message,
+      ImageUploadError() => '画像アップロードエラー: ${error.message}',
+      MaskGenerationError() => 'マスク生成エラー: ${error.message}',
+      Cancelled() => '操作がキャンセルされました',
+      Timeout() => 'タイムアウトしました',
       UnknownError() => '予期しないエラーが発生しました: ${error.message}',
+      _ => '予期しないエラーが発生しました: ${error.message}',
     };
   }
 

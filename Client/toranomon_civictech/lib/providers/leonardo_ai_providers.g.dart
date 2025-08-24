@@ -6,7 +6,7 @@ part of 'leonardo_ai_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$leonardoApiKeyHash() => r'd47c3f17c899beb0d028d6fa71b69b41f56858f9';
+String _$leonardoApiKeyHash() => r'315fdf4c83db97a5c35c974d1534a7276639880d';
 
 /// Leonardo.ai APIキープロバイダー
 ///
@@ -27,7 +27,7 @@ final leonardoApiKeyProvider = AutoDisposeFutureProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LeonardoApiKeyRef = AutoDisposeFutureProviderRef<String>;
-String _$leonardoAiServiceHash() => r'271f44c057945bf7d45df532e06ee17c9e6f0cc7';
+String _$leonardoAiServiceHash() => r'33451622494fb5a6c4950fef055b41944f292199';
 
 /// Leonardo.ai サービスプロバイダー
 ///
@@ -50,7 +50,7 @@ final leonardoAiServiceProvider =
 // ignore: unused_element
 typedef LeonardoAiServiceRef = AutoDisposeProviderRef<LeonardoAiService>;
 String _$leonardoAiRepositoryHash() =>
-    r'163e0b58af4515ba9f1df54c057af8b7222f6d65';
+    r'ad5e1a12530e4fb456bda77162517c387e5469bb';
 
 /// Leonardo.ai リポジトリプロバイダー
 ///
@@ -72,7 +72,50 @@ final leonardoAiRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LeonardoAiRepositoryRef = AutoDisposeProviderRef<LeonardoAiRepository>;
-String _$imageGenerationHash() => r'e899fd36b70b5f43bb4d1720f61e4e1b3cfe151e';
+String _$gallerySaveProgressHash() =>
+    r'e89f7ad6399b94e6760eaddd962363d4f66b99e1';
+
+/// ギャラリー保存進行状況プロバイダー
+///
+/// Copied from [gallerySaveProgress].
+@ProviderFor(gallerySaveProgress)
+final gallerySaveProgressProvider =
+    AutoDisposeProvider<GallerySaveProgress?>.internal(
+      gallerySaveProgress,
+      name: r'gallerySaveProgressProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$gallerySaveProgressHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GallerySaveProgressRef = AutoDisposeProviderRef<GallerySaveProgress?>;
+String _$canvasInpaintingProgressHash() =>
+    r'7b6dd0dba7b4865cb2fcad568bdbbcf6277fc667';
+
+/// Canvas Inpainting進行状況プロバイダー
+///
+/// Copied from [canvasInpaintingProgress].
+@ProviderFor(canvasInpaintingProgress)
+final canvasInpaintingProgressProvider =
+    AutoDisposeProvider<CanvasInpaintingProgress?>.internal(
+      canvasInpaintingProgress,
+      name: r'canvasInpaintingProgressProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$canvasInpaintingProgressHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CanvasInpaintingProgressRef =
+    AutoDisposeProviderRef<CanvasInpaintingProgress?>;
+String _$imageGenerationHash() => r'79d8738ff448d4cb8d049c5a0472def48528f844';
 
 /// 画像生成プロバイダー
 ///
@@ -95,7 +138,7 @@ final imageGenerationProvider =
     );
 
 typedef _$ImageGeneration = AutoDisposeAsyncNotifier<GenerationResult?>;
-String _$imageEditingHash() => r'd922a4fcbb9bc6fb70b75929e65bd848b628ebb8';
+String _$imageEditingHash() => r'863e53dcb80130d14d5e63d0ceb43899efb47c2a';
 
 /// 画像編集プロバイダー
 ///
@@ -115,26 +158,88 @@ final imageEditingProvider =
     );
 
 typedef _$ImageEditing = AutoDisposeAsyncNotifier<EditedImage?>;
-String _$gallerySaverProviderHash() =>
-    r'bc6bee448ad99e800433e0607b7b7196ff7b1e66';
+String _$gallerySaverHash() => r'0b870207ebc5e3c14df298cb94408ae502f4301a';
 
 /// ギャラリー保存プロバイダー
 ///
 /// 生成・編集された画像をデバイスのギャラリーに保存する
 ///
-/// Copied from [GallerySaverProvider].
-@ProviderFor(GallerySaverProvider)
-final gallerySaverProviderProvider =
-    AutoDisposeAsyncNotifierProvider<GallerySaverProvider, bool>.internal(
-      GallerySaverProvider.new,
-      name: r'gallerySaverProviderProvider',
+/// Copied from [GallerySaver].
+@ProviderFor(GallerySaver)
+final gallerySaverProvider =
+    AutoDisposeAsyncNotifierProvider<GallerySaver, bool>.internal(
+      GallerySaver.new,
+      name: r'gallerySaverProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$gallerySaverProviderHash,
+          : _$gallerySaverHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$GallerySaverProvider = AutoDisposeAsyncNotifier<bool>;
+typedef _$GallerySaver = AutoDisposeAsyncNotifier<bool>;
+String _$selectedImageHash() => r'd3aab78287da1887fccf2f1ec190b8f14e917c28';
+
+/// 選択画像プロバイダー
+///
+/// ギャラリーから選択した画像を管理する
+///
+/// Copied from [SelectedImage].
+@ProviderFor(SelectedImage)
+final selectedImageProvider =
+    AutoDisposeNotifierProvider<SelectedImage, File?>.internal(
+      SelectedImage.new,
+      name: r'selectedImageProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$selectedImageHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$SelectedImage = AutoDisposeNotifier<File?>;
+String _$brushDrawingHash() => r'f420eb0322c8f2cebcb2841d3b1023d7dd4337d2';
+
+/// ブラシ描画プロバイダー
+///
+/// ブラシサイズ、ストローク、描画状態を管理する
+///
+/// Copied from [BrushDrawing].
+@ProviderFor(BrushDrawing)
+final brushDrawingProvider =
+    AutoDisposeNotifierProvider<BrushDrawing, BrushState>.internal(
+      BrushDrawing.new,
+      name: r'brushDrawingProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$brushDrawingHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$BrushDrawing = AutoDisposeNotifier<BrushState>;
+String _$canvasInpaintingHash() => r'd58d08c0283c709c180e09034f6d0a86b0c18141';
+
+/// Canvas Inpaintingプロバイダー
+///
+/// Canvas Inpainting処理を管理するAsyncNotifierプロバイダー
+///
+/// Copied from [CanvasInpainting].
+@ProviderFor(CanvasInpainting)
+final canvasInpaintingProvider =
+    AutoDisposeAsyncNotifierProvider<
+      CanvasInpainting,
+      InpaintingResult?
+    >.internal(
+      CanvasInpainting.new,
+      name: r'canvasInpaintingProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$canvasInpaintingHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$CanvasInpainting = AutoDisposeAsyncNotifier<InpaintingResult?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

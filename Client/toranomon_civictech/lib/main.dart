@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'router/app_router.dart';
 import 'utils/app_logger.dart';
+import 'utils/resource_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,10 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   AppLogger.d('App - Firebase initialized successfully');
+
+  // リソースマネージャーを初期化
+  ResourceManager.instance.initialize();
+  AppLogger.d('App - Resource manager initialized successfully');
 
   // Google Maps SDKの初期化確認
   AppLogger.d('App - Google Maps SDK initialization check completed');

@@ -5,6 +5,9 @@ import '../../models/leonardo_ai/generation_response.dart';
 import '../../models/leonardo_ai/generation_job_response.dart';
 import '../../models/leonardo_ai/edit_request.dart';
 import '../../models/leonardo_ai/edit_response.dart';
+import '../../models/leonardo_ai/canvas_init_request.dart';
+import '../../models/leonardo_ai/canvas_init_response.dart';
+import '../../models/leonardo_ai/canvas_inpainting_request.dart';
 
 part 'leonardo_ai_api_client.g.dart';
 
@@ -47,6 +50,28 @@ abstract class LeonardoAiApiClient {
   /// Returns 生成状況の情報
   @GET("/generations/{id}")
   Future<GenerationResponse> getGenerationStatus(@Path("id") String id);
+
+  /// Canvas初期化API
+  ///
+  /// Canvas Inpainting用のプリサインドURLを取得する
+  ///
+  /// [request] Canvas初期化リクエスト
+  /// Returns プリサインドURLとフィールド情報
+  @POST("/canvas-init-image")
+  Future<CanvasInitResponse> getCanvasInitUrls(
+    @Body() CanvasInitRequest request,
+  );
+
+  /// Canvas Inpainting実行API
+  ///
+  /// Canvas Inpaintingを実行する（generations APIの特殊形式）
+  ///
+  /// [request] Canvas Inpaintingリクエスト
+  /// Returns 生成ジョブの情報
+  @POST("/generations")
+  Future<GenerationJobResponse> executeCanvasInpainting(
+    @Body() CanvasInpaintingRequest request,
+  );
 
   // TODO: ユーザー情報とモデル一覧のAPIは後で実装
   // 現在はRetrofitのMap<String, dynamic>処理に問題があるため一時的に削除

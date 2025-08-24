@@ -5,7 +5,7 @@ void main() {
   group('LeonardoAiException', () {
     test('should create NetworkError', () {
       // Arrange & Act
-      const exception = LeonardoAiException.networkError(
+      final exception = LeonardoAiException.networkError(
         'Network connection failed',
       );
 
@@ -16,7 +16,7 @@ void main() {
 
     test('should create ApiError', () {
       // Arrange & Act
-      const exception = LeonardoAiException.apiError(
+      final exception = LeonardoAiException.apiError(
         500,
         'Internal server error',
       );
@@ -24,12 +24,12 @@ void main() {
       // Assert
       expect(exception, isA<ApiError>());
       expect(exception.message, 'Internal server error');
-      expect((exception as ApiError).statusCode, 500);
+      expect(exception.statusCode, 500);
     });
 
     test('should create AuthenticationError', () {
       // Arrange & Act
-      const exception = LeonardoAiException.authenticationError(
+      final exception = LeonardoAiException.authenticationError(
         'Invalid API key',
       );
 
@@ -49,12 +49,12 @@ void main() {
       // Assert
       expect(exception, isA<RateLimitError>());
       expect(exception.message, 'Rate limit exceeded');
-      expect((exception as RateLimitError).retryAfter, retryAfter);
+      expect(exception.retryAfter, retryAfter);
     });
 
     test('should create ValidationError', () {
       // Arrange & Act
-      const exception = LeonardoAiException.validationError(
+      final exception = LeonardoAiException.validationError(
         'Invalid prompt format',
       );
 
@@ -65,7 +65,7 @@ void main() {
 
     test('should create UnknownError', () {
       // Arrange & Act
-      const exception = LeonardoAiException.unknownError(
+      final exception = LeonardoAiException.unknownError(
         'Something went wrong',
       );
 
@@ -76,7 +76,7 @@ void main() {
 
     test('should be an Exception', () {
       // Arrange & Act
-      const exception = LeonardoAiException.networkError('Test error');
+      final exception = LeonardoAiException.networkError('Test error');
 
       // Assert
       expect(exception, isA<Exception>());
@@ -84,15 +84,12 @@ void main() {
 
     test('should support pattern matching with is operator', () {
       // Arrange
-      const exception = LeonardoAiException.apiError(404, 'Not found');
+      final exception = LeonardoAiException.apiError(404, 'Not found');
 
       // Act & Assert
-      if (exception is ApiError) {
-        expect(exception.statusCode, 404);
-        expect(exception.message, 'Not found');
-      } else {
-        fail('Should be ApiError');
-      }
+      expect(exception, isA<ApiError>());
+      expect(exception.statusCode, 404);
+      expect(exception.message, 'Not found');
     });
   });
 }
