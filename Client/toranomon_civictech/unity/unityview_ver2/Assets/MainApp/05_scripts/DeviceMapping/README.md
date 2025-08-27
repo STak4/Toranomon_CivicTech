@@ -150,7 +150,7 @@
     - **MapperTCT.RunMappingFor()**インスタンスを実行
         - 引数にてマッピング時間管理、指定時間でマッピングを実行
         - ARDeviceMappingManager.DeviceMapFinalizedインスタンスにOnDeviceMapFinalizeを追加　→　完了トリガー管理
-3. MapperTCT.OnDeviceMspFinalize() - インスタンス
+3. MapperTCT.OnDeviceMapFinalize() - インスタンス
     - **データがあればローカルに保存を実行**
 
 #### B-2. 新規作成後の連続動作

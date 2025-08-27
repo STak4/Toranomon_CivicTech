@@ -239,6 +239,7 @@ public class DebugSystem : MonoBehaviour
             $"Touch Count : {Input.touchCount}\n" +
             $"\n" +
             $"Tracking state : {trackerTCT.GetTrackingState()}\n" +
+            $"Tracking device map : {trackerTCT.GetDeviceMapCondition()}\n" +
             $"Has valid map : {mapperTCT.GetMap().HasValidMap()}\n" +
             $"Mapping Node Count : {mapperTCT.GetMap().DeviceMapNodes.Count}\n" +
             $"\n" +

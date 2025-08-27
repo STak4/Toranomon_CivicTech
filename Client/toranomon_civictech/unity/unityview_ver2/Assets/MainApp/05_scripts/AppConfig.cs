@@ -36,6 +36,8 @@ public class AppConfig
     private bool _isStatusView = false;
     private bool _isRadarView = false;
 
+    private byte[] _latestMapBytes = null;
+
     public event Action<AppPhase, AppPhase> PhaseChangeAction;
 
     public AppPhase GetAppPhase()
@@ -105,6 +107,11 @@ public class AppConfig
         set { _isInformationView = value; }
     }
 
+    public byte[] LatestMapBytes
+    {
+        get { return _latestMapBytes; }
+        set { _latestMapBytes = value; }
+    }
 
     private void TriggerPhaseChange(AppPhase oldPhase, AppPhase newPhase)
     {

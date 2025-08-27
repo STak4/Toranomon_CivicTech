@@ -11,6 +11,9 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private ARCameraManager _arCameraManager;
     [SerializeField] private ARCameraBackground _arCameraBackground;
 
+    [SerializeField] private MapperTCT _mapperTCT;
+    [SerializeField] private TrackerTCT _trackerTCT;
+
     [SerializeField] private GameObject _statusView;
     [SerializeField] private TMP_Text _statusText;
     [SerializeField] private GameObject _informationView;
@@ -24,13 +27,15 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private Button _photoShootButton;
     [SerializeField] private Button _submitButton;
 
+    [SerializeField] private GameObject _photoObject;
+
     public void Initialize()
     {
-        _radarButton.onClick.AddListener(() => TriggerRadarButtonAction());
-        _trackingButton.onClick.AddListener(async () => await TriggerTrackingButtonAction());
+        _radarButton.onClick.AddListener(() => _ = TriggerRadarButtonAction());
+        _trackingButton.onClick.AddListener(() => _ = TriggerTrackingButtonAction());
         _arViewButton.onClick.AddListener(() => TriggerARViewButtonAction());
 
-        _mappingButton.onClick.AddListener(() => TriggerMappingButtonAction());
+        _mappingButton.onClick.AddListener(() => _ = TriggerMappingButtonAction());
         _photoShootButton.onClick.AddListener(() => TriggerPhotoShootButtonAction());
         _submitButton.onClick.AddListener(() => TriggerSubmitButtonAction());
 
@@ -53,6 +58,65 @@ public class AppUIMaster : MonoBehaviour
             ButtonActiveChange(newPhase);
             await ViewActiveChange(newPhase);
         };
+        _mapperTCT._onMappingComplete += (success) =>
+        {
+            MappingCompleteGot(success);
+        };
+        _mapperTCT._onDeviceMapUpdated += (deviceMap) =>
+        {
+            MapUpdateGot(deviceMap);
+        };
+        _trackerTCT._trackingComplete += (success) =>
+        {
+            TrackingCompleteGot(success);
+        };
+        _trackerTCT._mapLoadComplete += (success) =>
+        {
+            MapLoadCompleteGot(success);
+        };
+    }
+
+    public void Dispose()
+    {
+        appConfig.PhaseChangeAction -= async (oldPhase, newPhase) =>
+        {
+            StatusChange(newPhase);
+            ButtonActiveChange(newPhase);
+            await ViewActiveChange(newPhase);
+        };
+        _mapperTCT._onMappingComplete -= (success) =>
+        {
+            MappingCompleteGot(success);
+        };
+        _trackerTCT._trackingComplete -= (success) =>
+        {
+            TrackingCompleteGot(success);
+        };
+        _trackerTCT._mapLoadComplete -= (success) =>
+        {
+            MapLoadCompleteGot(success);
+        };
+    }
+
+    public void PutDebugObjects()
+    {
+        if (_photoObject != null)
+        {
+            // カメラのTransform取得
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                Vector3 pos = cam.transform.position + cam.transform.forward * 2.0f;
+                Quaternion rot = cam.transform.rotation;
+                GameObject obj = Instantiate(_photoObject, pos, rot);
+                _trackerTCT.AddObjectToAnchor(obj);
+            }
+            else
+            {
+                GameObject obj = Instantiate(_photoObject);
+                _trackerTCT.AddObjectToAnchor(obj);
+            }
+        }
     }
 
     private void StatusChange(AppPhase newPhase)
@@ -78,8 +142,7 @@ public class AppUIMaster : MonoBehaviour
 
             case AppPhase.Standby:
                 _radarButton.interactable = true;
-                if (appConfig.IsArView) _trackingButton.interactable = true;
-                else _trackingButton.interactable = false;
+                _trackingButton.interactable = false;
                 _arViewButton.interactable = true;
                 if (appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
@@ -167,7 +230,7 @@ public class AppUIMaster : MonoBehaviour
                 InformationOnOff(false);
                 break;
             case AppPhase.Standby:
-                RadarOnOff(true);
+                RadarOnOff(false);
                 InformationOnOff(false);
                 break;
             case AppPhase.Mapping:
@@ -300,11 +363,42 @@ public class AppUIMaster : MonoBehaviour
     }
 
 
+    // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
+    private async Task RadarSearch()
+    {
+        // 一瞬待ちを入れる（ネットロードなら不要、ローカルロードのため）
+        await Task.Yield();
+        _ = _trackerTCT.LoadMapFromLocal();
+    }
+    private void MapLoadCompleteGot(bool success)
+    {
+        if (success)
+        {
+            appConfig.GotNearbyMap = true;
+            Debug.Log("[AppUIMaster] Map load complete.");
+        }
+        else
+        {
+            appConfig.GotNearbyMap = false;
+            Debug.LogWarning("[AppUIMaster] Map load complete but no valid mapping data was created.");
+        }
+    }
 
-    private void TriggerRadarButtonAction()
+    private async Task TriggerRadarButtonAction()
     {
         bool isActive = _radarView.activeSelf;
         RadarOnOff(!isActive);
+        bool willActivate = !isActive;
+
+        if (appConfig.GetAppPhase() == AppPhase.Standby && willActivate)
+        {
+            await RadarSearch();
+            appConfig.SetAppPhase(AppPhase.Radar);
+        }
+        else if (appConfig.GetAppPhase() == AppPhase.Radar && !willActivate)
+        {
+            appConfig.SetAppPhase(AppPhase.Standby);
+        }
     }
     private void TriggerARViewButtonAction()
     {
@@ -315,18 +409,89 @@ public class AppUIMaster : MonoBehaviour
     }
 
 
-    public async Task Tracking()
+
+
+
+    // ◆◆◆◆トラッキングの本実行関数◆◆◆◆
+    private async Task Tracking()
     {
-        await Task.Delay(2000);
-        if (appConfig.GetAppPhase() == AppPhase.Tracking) appConfig.GotTracked = true;
-            
+        //■■■■下記は本来GetAppPhaseの方が無難だが、複数からの呼び出しがあるため■■■■
+        if (appConfig.GotNearbyMap)
+        {
+            _trackerTCT.StartTracking();
+        }
+        else
+        {
+            Debug.LogWarning("[AppUIMaster] Tracking cancelled because no nearby map is loaded.");
+            await Task.Yield();
+            appConfig.SetAppPhase(AppPhase.Standby);
+        }
+    }
+    private void TrackingCompleteGot(bool success)
+    {
+        if (success)
+        {
+            if (appConfig.GetAppPhase() == AppPhase.Tracking)
+            {
+                appConfig.GotTracked = true;
+            } 
+            Debug.Log("[AppUIMaster] Tracking complete and tracking data saved.");
+        }
+        else
+        {
+            appConfig.GotTracked = false;
+            Debug.LogWarning("[AppUIMaster] Tracking complete but no valid tracking data was created.");
+        }
     }
 
-    public async Task Mapping()
+    // ◆◆◆◆マッピングの本実行関数◆◆◆◆
+    private async Task Mapping()
     {
-        await Task.Delay(2000);
-        if (appConfig.GetAppPhase() == AppPhase.Mapping) appConfig.MadeMap = true;
+        _trackerTCT.ClearAllState();
+        _mapperTCT.ClearAllState();
+        _mapperTCT.RunMappingFor(5.0f);
+        // 動作完了後下記のMappingCompleteGotがいくつか経由して呼ばれる
+        await Task.Yield(); //警告回避一時関数
     }
+    private async Task MappingStop()
+    {
+        _trackerTCT.ClearAllState();
+        _mapperTCT.ClearAllState();
+        await Task.Yield(); //警告回避一時関数
+    }
+
+    private void MappingCompleteGot(bool success)
+    {
+        if (success)
+        {
+            if (appConfig.GetAppPhase() == AppPhase.Mapping)
+            {
+                appConfig.MadeMap = true;
+                appConfig.GotNearbyMap = true;
+            }
+            Debug.Log("[AppUIMaster] Mapping complete and map saved.");
+            // _ = Tracking();
+        }
+        else
+        {
+            appConfig.MadeMap = false;
+            appConfig.GotNearbyMap = false;
+            Debug.LogWarning("[AppUIMaster] Mapping complete but no valid map was created.");
+        }
+    }
+    private void MapUpdateGot(byte[] serializedMap)
+    {
+        if (serializedMap != null)
+        {
+            appConfig.LatestMapBytes = serializedMap;
+            _trackerTCT.LoadMap(serializedMap);
+        }
+        else
+        {
+            Debug.LogWarning("[WARNING] [AppUIMaster] Map update received but no valid map is loaded.");
+        }
+    }
+
 
     private async Task TriggerTrackingButtonAction()
     {
@@ -343,16 +508,19 @@ public class AppUIMaster : MonoBehaviour
     }
     private async Task TriggerMappingButtonAction()
     {
-        Debug.Log("Mapping button pressed.");
+        Debug.Log("[AppUIMaster] Mapping button pressed.");
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Mapping)
         {
             appConfig.SetAppPhase(AppPhase.Mapping);
             await Mapping();
+            Debug.Log("[AppUIMaster] Mapping task run.");
         }
         else
         {
             appConfig.SetAppPhase(AppPhase.Standby);
+            await MappingStop();
+            Debug.Log("[AppUIMaster] Mapping task stopped.");
         }
     }
     private void TriggerPhotoShootButtonAction()
@@ -365,7 +533,7 @@ public class AppUIMaster : MonoBehaviour
         else
         {
             appConfig.MadePhoto = true;
-            Debug.Log("MADE PHOTO!!");
+            Debug.Log("[AppUIMaster] MADE PHOTO!!");
         }
     }
     private void TriggerSubmitButtonAction()
@@ -378,7 +546,7 @@ public class AppUIMaster : MonoBehaviour
         else
         {
             appConfig.Submitted = true;
-            Debug.Log("SUBMIT DONE!!");
+            Debug.Log("[AppUIMaster] SUBMIT DONE!!");
         }
     }
 

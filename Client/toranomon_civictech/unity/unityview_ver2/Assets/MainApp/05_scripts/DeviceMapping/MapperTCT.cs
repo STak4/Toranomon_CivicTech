@@ -7,6 +7,7 @@ using System.IO;
 using Niantic.Lightship.AR.Mapping;
 using Niantic.Lightship.AR.MapStorageAccess;
 using UnityEngine;
+using Newtonsoft.Json;
 
 /// <summary>
 /// このクラスは、端末上にローカルマップ（空間情報）を作成し、ファイルに保存する管理を行います。
@@ -17,15 +18,16 @@ public class MapperTCT : MonoBehaviour
     private ARDeviceMappingManager _deviceMappingManager;
 
     // マッピング完了時に通知されるイベント
-    public Action<bool> _onMappingComplete;
-   
+    public event Action<bool> _onMappingComplete;
+    public event Action<byte[]> _onDeviceMapUpdated;
+
     void Start()
     {
         // Start(): マッピングマネージャの各種設定を行い、モジュールを再起動します。
         _deviceMappingManager.MappingSplitterMaxDistanceMeters = 10.0f;
         _deviceMappingManager.MappingSplitterMaxDurationSeconds = 1000.0f;
         _deviceMappingManager.DeviceMapAccessController.OutputEdgeType = OutputEdgeType.All;
-        
+
         // マネージャの設定を反映
         StartCoroutine(_deviceMappingManager.RestartModuleAsyncCoroutine());
     }
@@ -58,7 +60,7 @@ public class MapperTCT : MonoBehaviour
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
         _deviceMappingManager.DeviceMapFinalized -= async (map) => await SaveMapOnDevice(map);
     }
-    
+
     /// <summary>
     /// RunMapping(float seconds): コルーチン。マッピングを開始し、指定秒数後に停止します。
     /// ◆◆指定秒数制御なので、時間に応じて精度依存が出る様子◆◆
@@ -74,7 +76,7 @@ public class MapperTCT : MonoBehaviour
         _mappingInProgress = true;
         _deviceMappingManager.SetDeviceMap(new ARDeviceMap());
         _deviceMappingManager.StartMapping();
-        
+
         //end mapping after a few seconds
         yield return new WaitForSeconds(seconds);
         _deviceMappingManager.StopMapping();
@@ -118,15 +120,16 @@ public class MapperTCT : MonoBehaviour
     {
         _deviceMappingManager.DeviceMapFinalized -= OnDeviceMapFinalized;
         _deviceMappingManager.DeviceMapFinalized -= async (map) => await SaveMapOnDevice(map);
-        
+
         bool success = false;
-        
+
         //if a map was created save it to a file
         if (map.HasValidMap()) success = true;
         else Debug.LogWarning("No valid map created.");
 
         Debug.Log("== Mapping Complete. ==");
         _onMappingComplete?.Invoke(success);
+        _onDeviceMapUpdated?.Invoke(map.Serialize());
     }
 
     // OnDeviceMapFinalized()から分離・追加
@@ -141,4 +144,16 @@ public class MapperTCT : MonoBehaviour
             Debug.Log($"== Map saved to {path} ==");
         }
     }
+
+    // ◆◆追加関数・サーバー送信用（未使用）◆◆
+    private async Task SendMapDataToServer(ARDeviceMap map)
+    {
+        if (map.HasValidMap())
+        {
+            byte[] serializedDeviceMap = map.Serialize();
+            await Task.Delay(100); // ダミーの非同期処理
+        }
+    }
+
+
 }

@@ -108,7 +108,7 @@ public class CloudPersistenceTCT : MonoBehaviour
             _waitForMap = false;
             //go to tracking and localise to the map.
             _statusText.text = "Move Phone around to localize to map";
-            _tracker._tracking += Localized;
+            _tracker._onTracking += Localized;
             _tracker.StartTracking();
                     
             _scanningAnimationPanel.SetActive(true);
@@ -289,7 +289,7 @@ public class CloudPersistenceTCT : MonoBehaviour
     
     private void Teardown_LocalizeMenu()
     {
-        _tracker._tracking -= Localized;
+        _tracker._onTracking -= Localized;
         _scanningAnimationPanel.SetActive(false);
         
         _localizationPanel.SetActive(false);
@@ -302,7 +302,7 @@ public class CloudPersistenceTCT : MonoBehaviour
         if (localized == true)
         {
             _statusText.text = "";
-            _tracker._tracking -= Localized;
+            _tracker._onTracking -= Localized;
             SetUp_InGameMenu();
             _scanningAnimationPanel.SetActive(false);
 

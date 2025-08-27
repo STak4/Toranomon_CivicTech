@@ -23,11 +23,34 @@ public class AppMaster : MonoBehaviour
         appConfig.PhaseChangeAction += async (oldPhase, newPhase)
             => await PhaseControlHandler(oldPhase, newPhase);
     }
+    float timeDelta = 0;
+    float intervalTime = 5f;
     private void Update()
     {
+        if (appConfig.GotTracked)
+        {
 
+            timeDelta += Time.deltaTime;
+            if(timeDelta > intervalTime)
+            {
+                timeDelta = 0;
+                _appUIMaster.PutDebugObjects();
+            }
+        }
+    }
+    private void OnApplicationQuit()
+    {
+        Dispose();
+        _appUIMaster.Dispose();
+    }
+    private void Dispose()
+    {
+        appConfig.PhaseChangeAction -= async (oldPhase, newPhase)
+            => await PhaseControlHandler(oldPhase, newPhase);
     }
 
+    // 基本仕様は、AppUIMaster等でボタン同時のフェーズ切り替えと各種動作を実行
+    // AppMasterでは状態管理をし、動作完了後のフェーズ移動とタイムアウトを実施する
     private async Task PhaseControlHandler(AppPhase oldPhase, AppPhase newPhase)
     {
         float timeOut = 0;
@@ -64,12 +87,14 @@ public class AppMaster : MonoBehaviour
                 if (!appConfig.IsArView)
                 {
                     Debug.LogWarning("ARViewが起動していません。");
+                    if (appConfig.GetAppPhase() == AppPhase.Mapping)
+                        appConfig.SetAppPhase(AppPhase.Standby);
                     return;
                 }
                 // UI側でマッピング開始処理を入れる
                 // ウェイトタイムを入れる(UI側でのMapping起動待ち)
                 timeOut = 0;
-                maxWaitTime = 3f; // 最大待機時間3秒
+                maxWaitTime = 8f; // 最大待機時間8秒
                 while (timeOut < maxWaitTime)
                 {
                     await Task.Delay(100);
@@ -80,6 +105,8 @@ public class AppMaster : MonoBehaviour
                 if (!appConfig.MadeMap)
                 {
                     Debug.LogWarning("タイムアウトの為、マッピングがキャンセルされました。");
+                    if (appConfig.GetAppPhase() == AppPhase.Mapping)
+                        appConfig.SetAppPhase(AppPhase.Standby);
                     return;
                 }
                 // マッピング終了後、処理を移行する
@@ -89,7 +116,7 @@ public class AppMaster : MonoBehaviour
                 appConfig.MadePhoto = false;
                 // ウェイトタイムを入れる(UI側でのARView起動待ち)
                 timeOut = 0;
-                maxWaitTime = 60f; // 最大待機時間60秒
+                maxWaitTime = 180f; // 最大待機時間180秒
                 while (timeOut < maxWaitTime)
                 {
                     await Task.Delay(100);
@@ -100,6 +127,8 @@ public class AppMaster : MonoBehaviour
                 if (!appConfig.MadePhoto)
                 {
                     Debug.LogWarning("タイムアウトの為、フォト撮影がキャンセルされました。");
+                    if (appConfig.GetAppPhase() == AppPhase.Mapped)
+                        appConfig.SetAppPhase(AppPhase.Standby);
                     return;
                 }
                 // フォト撮影後処理を入れる
@@ -120,15 +149,35 @@ public class AppMaster : MonoBehaviour
                 if (!appConfig.Submitted)
                 {
                     Debug.LogWarning("タイムアウトの為、投稿がキャンセルされました。");
+                    if (appConfig.GetAppPhase() == AppPhase.PhotoShot)
+                        appConfig.SetAppPhase(AppPhase.Standby);
                     return;
                 }
                 // フォト撮影後処理を入れる
-                appConfig.SetAppPhase(AppPhase.Tracking);
-                // 下記はTrackerからの呼び出しが良さそう。
-                await _appUIMaster.Tracking();
+                appConfig.SetAppPhase(AppPhase.StandbyTracking);
                 break;
 
             case AppPhase.Radar:
+                appConfig.GotNearbyMap = false;
+                // ウェイトタイムを入れる(UI側でのARView起動待ち)
+                timeOut = 0;
+                maxWaitTime = 180.0f; // 最大待機時間180秒
+                while (timeOut < maxWaitTime)
+                {
+                    await Task.Delay(100);
+                    timeOut += 0.1f;
+                    if (appConfig.GetAppPhase() != AppPhase.Radar) return;
+                    if (appConfig.GotNearbyMap) break;
+                }
+                if (!appConfig.GotNearbyMap)
+                {
+                    Debug.LogWarning("タイムアウトの為、近くのマップ取得がキャンセルされました。");
+                    if (appConfig.GetAppPhase() == AppPhase.Radar)
+                        appConfig.SetAppPhase(AppPhase.Standby);
+                    return;
+                }
+                // マップデータ読込後の処理を入れる
+                appConfig.SetAppPhase(AppPhase.StandbyTracking);
                 break;
 
             case AppPhase.StandbyTracking:
@@ -151,10 +200,10 @@ public class AppMaster : MonoBehaviour
                     Debug.LogWarning("ARViewが起動していません。");
                     return;
                 }
-                // UI側でマッピング開始処理を入れる
-                // ウェイトタイムを入れる(UI側でのMapping起動待ち)
+                // UI側でトラッキング開始処理を入れる
+                // ウェイトタイムを入れる(UI側でのTracking起動待ち)
                 timeOut = 0;
-                maxWaitTime = 3f; // 最大待機時間3秒
+                maxWaitTime = 5.0f; // 最大待機時間3秒
                 while (timeOut < maxWaitTime)
                 {
                     await Task.Delay(100);
@@ -164,10 +213,15 @@ public class AppMaster : MonoBehaviour
                 }
                 if (!appConfig.GotTracked)
                 {
-                    Debug.LogWarning("タイムアウトの為、マッピングがキャンセルされました。");
+                    Debug.LogWarning("タイムアウトの為、トラッキングがキャンセルされました。");
+                    if (appConfig.GetAppPhase() == AppPhase.Tracking)
+                    {
+                        if (appConfig.GotNearbyMap) appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                        else appConfig.SetAppPhase(AppPhase.Standby);
+                    }
                     return;
-                }
-                // マッピング終了後、処理を移行する
+                 }
+                // トラッキング終了後、処理を移行する
                 appConfig.SetAppPhase(AppPhase.Tracked);
                 break;
             case AppPhase.Tracked:

@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using Niantic.Lightship.AR.Mapping;
 using Niantic.Lightship.AR.PersistentAnchors;
 using UnityEngine;
@@ -25,11 +26,17 @@ public class TrackerTCT : MonoBehaviour
     // ファイルからマップデータを読み込むかどうか
     public bool _loadFromFile = true;
 
-    // トラッキング成功時に通知されるイベント
-    public Action<bool> _tracking;
+    // トラッキング成功時に通知されるイベント：これを参照することで、トラッキング成功を検知できる
+    public event Action<bool> _onTracking;
+
+    public event Action<bool> _trackingComplete;
+    private bool _isTracking = false;
 
     // マップデータ
     private ARDeviceMap _deviceMap;
+
+    // ◆◆マップデータ読込に対応したevent◆◆
+    public event Action<bool> _mapLoadComplete;
 
     // ローカライズ前にオブジェクトを一時的に保持するアンカー
     GameObject _tempAnchor;
@@ -51,6 +58,9 @@ public class TrackerTCT : MonoBehaviour
 
     private void Update()
     {
+        if (_anchor && _anchor.trackingState == TrackingState.Tracking) _isTracking = true;
+        else _isTracking = false;
+
         // Update(): ローカライズが完了した場合、一時アンカーに紐付いていたオブジェクトを本アンカーに移動します。
         //cleans up any items that were added before we localised by reparenting them to the proper anchor
         if (_tempAnchor && _anchor && _anchor.trackingState == TrackingState.Tracking)
@@ -77,7 +87,7 @@ public class TrackerTCT : MonoBehaviour
     private void OnArPersistentAnchorStateChanged(ARPersistentAnchorStateChangedEventArgs args)
     {
         // アセットでの下記アクションへの紐づきはメニュー表示程度で動作に大きな影響なし。
-        if (args.arPersistentAnchor.trackingState == TrackingState.Tracking) _tracking?.Invoke(true);
+        if (args.arPersistentAnchor.trackingState == TrackingState.Tracking) _onTracking?.Invoke(true);
     }
 
     /// <summary>
@@ -105,6 +115,13 @@ public class TrackerTCT : MonoBehaviour
         _persistentAnchorManager.arPersistentAnchorStateChanged -= OnArPersistentAnchorStateChanged;
     }
 
+    // トラッキング停止動作だが、自前で用意の為意図しない挙動がある可能性あり。
+    public void StopTracking()
+    {
+        _persistentAnchorManager.enabled = false;
+        _persistentAnchorManager.arPersistentAnchorStateChanged -= OnArPersistentAnchorStateChanged;
+    }
+
     /// <summary>
     /// ClearAllState(): 全状態のクリア。アンカー破棄とマップデータのクリアを行います。
     /// ◆◆主にシーン遷移時等に活用している。各種リセット時に活用する方針か◆◆
@@ -123,6 +140,35 @@ public class TrackerTCT : MonoBehaviour
     public void LoadMap(byte[] serializedDeviceMap)
     {
         _deviceMap = ARDeviceMap.CreateFromSerializedData(serializedDeviceMap);
+        if (_deviceMap != null)
+        {
+            Debug.Log("== Map loaded. ==");
+            _mapLoadComplete?.Invoke(true);
+        }
+        else
+        {
+            Debug.LogError("== Map load failed. ==");
+            _mapLoadComplete?.Invoke(false);
+        }
+    }
+
+    public async Task LoadMapFromLocal()
+    {
+        var fileName = "map.dat";
+        var path = Path.Combine(Application.persistentDataPath, fileName);
+        var serializedDeviceMap = await File.ReadAllBytesAsync(path);
+        _deviceMap = ARDeviceMap.CreateFromSerializedData(serializedDeviceMap);
+        if (_deviceMap != null)
+        {
+            Debug.Log("== Map loaded from local. ==");
+            Debug.Log($"== Map data: {_deviceMap != null} ==");
+            _mapLoadComplete?.Invoke(true);
+        }
+        else
+        {
+            Debug.LogError("== Map load from local failed. ==");
+            _mapLoadComplete?.Invoke(false);
+        }
     }
 
     /// <summary>
@@ -131,11 +177,18 @@ public class TrackerTCT : MonoBehaviour
     /// </summary>
     private IEnumerator RestartTrackingDataStore()
     {
+        float timeout;
+        float elapsed;
+
         Debug.Log("== Restart tracking data store. ==");
+        timeout = 5.0f;
+        elapsed = 0.0f;
         //this needs to be set!
         while (_deviceMap == null)
         {
             Debug.Log("== Waiting for device map set... ==");
+            if (elapsed > timeout) yield break;
+            elapsed += 1.0f;
             yield return new WaitForSeconds(1);
         }
 
@@ -143,6 +196,7 @@ public class TrackerTCT : MonoBehaviour
 
         // start tracking after stop tracking needs "some" time in between...
         yield return null;
+        yield return new WaitForSeconds(0.5f);
 
         _persistentAnchorManager.enabled = true;
 
@@ -156,10 +210,36 @@ public class TrackerTCT : MonoBehaviour
         _persistentAnchorManager.TryTrackAnchor(
             new ARPersistentAnchorPayload(_deviceMap.GetAnchorPayload()),
             out _anchor);
+        // ◆◆下記以降はトラッキング完了まで待つ処理を追加しており、タイムアウトも入れてみている◆◆
+        timeout = 5.0f;
+        elapsed = 0.0f;
         while (!_anchor || _anchor.trackingState != TrackingState.Tracking)
         {
-            Debug.Log("== Waiting for anchor... ==");
-            yield return new WaitForSeconds(1);
+            if (elapsed > timeout) yield break;
+            elapsed += 0.1f;
+            yield return new WaitForSeconds(0.1f);
+        }
+        if (!_anchor && _anchor.trackingState != TrackingState.Tracking)
+        {
+            // ◆◆下記は自前で追加◆◆
+            StopTracking();
+            _trackingComplete?.Invoke(false);
+            Debug.LogError("== Tracking failed. ==");
+            yield break;
+        }
+
+        yield return new WaitForSeconds(0.1f); // 少し待つ
+        if (_isTracking == true) _trackingComplete?.Invoke(true);
+
+        if (_deviceMap != null)
+        {
+            Debug.Log("== Map loaded from tracking. ==");
+            _mapLoadComplete?.Invoke(true);
+        }
+        else
+        {
+            Debug.LogError("== Map load from tracking failed. ==");
+            _mapLoadComplete?.Invoke(false);
         }
         Debug.Log("== Tracking Done. ==");
     }
@@ -180,11 +260,17 @@ public class TrackerTCT : MonoBehaviour
     public void AddObjectToAnchor(GameObject go)
     {
         go.transform.SetParent(Anchor.transform);
+        //SetParent(parent) → ワールド座標を維持
+        //SetParent(parent, false) → ローカル座標を維持（親に対して固定配置） 
     }
-    
+
     public TrackingState GetTrackingState()
     {
         return _anchor ? _anchor.trackingState : TrackingState.None;
+    }
+    public bool GetDeviceMapCondition()
+    {
+        return _deviceMap != null;
     }
 
 }
