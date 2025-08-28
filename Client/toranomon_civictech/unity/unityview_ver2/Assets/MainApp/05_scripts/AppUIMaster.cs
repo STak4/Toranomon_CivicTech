@@ -158,6 +158,15 @@ public class AppUIMaster : MonoBehaviour
                 _submitButton.interactable = false;
                 break;
 
+            case AppPhase.Radar:
+                _radarButton.interactable = true;
+                _trackingButton.interactable = false;
+                _arViewButton.interactable = true;
+                _mappingButton.interactable = false;
+                _photoShootButton.interactable = false;
+                _submitButton.interactable = false;
+                break;
+
             case AppPhase.Mapping:
                 _radarButton.interactable = false;
                 _trackingButton.interactable = false;
@@ -166,7 +175,7 @@ public class AppUIMaster : MonoBehaviour
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
-
+            /*
             case AppPhase.Mapped:
                 _radarButton.interactable = false;
                 _trackingButton.interactable = false;
@@ -183,15 +192,7 @@ public class AppUIMaster : MonoBehaviour
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = true;
                 break;
-
-            case AppPhase.Radar:
-                _radarButton.interactable = true;
-                _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
-                _mappingButton.interactable = false;
-                _photoShootButton.interactable = false;
-                _submitButton.interactable = false;
-                break;
+                */
 
             case AppPhase.StandbyTracking:
                 _radarButton.interactable = true;
@@ -237,25 +238,35 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(false);
                 break;
+
             case AppPhase.Standby:
-                RadarOnOff(false);
                 InformationOnOff(false);
                 break;
+
+            case AppPhase.Radar:
+                ARViewOnOff(false);
+                RadarOnOff(true);
+                InformationOnOff(false);
+                break;
+
             case AppPhase.Mapping:
                 ARViewOnOff(true);
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please see around for mapping...");
-                while(appConfig.GetAppPhase() == AppPhase.Mapping)
+                while(appConfig.GetAppPhase() == AppPhase.Mapping && !appConfig.MadeMap)
                 {
-                    await Task.Delay(1000);
-                    if (appConfig.GetAppPhase() != AppPhase.Mapping) break;
+                    await Task.Delay(500);
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping || appConfig.MadeMap) break;
                     InformationOnOff(false);
-                    await Task.Delay(1000);
-                    if (appConfig.GetAppPhase() != AppPhase.Mapping) break;
+                    await Task.Delay(500);
+                    if (appConfig.GetAppPhase() != AppPhase.Mapping || appConfig.MadeMap) break;
                     InformationOnOff(true);
                 }
+                InformationOnOff(true);
+                InformationChange("Mapping done!");
                 break;
+            /*
             case AppPhase.Mapped:
                 InformationOnOff(true);
                 InformationChange("Mapping done!");
@@ -270,11 +281,11 @@ public class AppUIMaster : MonoBehaviour
                 if(appConfig.GetAppPhase() == AppPhase.PhotoShot)
                     InformationOnOff(false);
                 break;
-            case AppPhase.Radar:
-                RadarOnOff(true);
-                InformationOnOff(false);
-                break;
+            */
+
             case AppPhase.StandbyTracking:
+                ARViewOnOff(true);
+                RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please start tracking.");
                 break;
@@ -283,22 +294,22 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please see around for tracking...");
-                while(appConfig.GetAppPhase() == AppPhase.Tracking)
+                while(appConfig.GetAppPhase() == AppPhase.Tracking && !appConfig.GotTracked)
                 {
-                    await Task.Delay(1000);
-                    if (appConfig.GetAppPhase() != AppPhase.Tracking) break;
+                    await Task.Delay(500);
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking || appConfig.GotTracked) break;
                     InformationOnOff(false);
-                    await Task.Delay(1000);
-                    if (appConfig.GetAppPhase() != AppPhase.Tracking) break;
+                    await Task.Delay(500);
+                    if (appConfig.GetAppPhase() != AppPhase.Tracking || appConfig.GotTracked) break;
                     InformationOnOff(true);
                 }
-                break;
-            case AppPhase.Tracked:
                 InformationOnOff(true);
                 InformationChange("Tracking done!");
-                await Task.Delay(500);
-                if(appConfig.GetAppPhase() == AppPhase.Tracked)
-                    InformationOnOff(false);
+                break;
+            case AppPhase.Tracked:
+                ARViewOnOff(true);
+                RadarOnOff(false);
+                InformationOnOff(false);
                 break;
             default:
                 break;
@@ -540,7 +551,8 @@ public class AppUIMaster : MonoBehaviour
         }
         else
         {
-            appConfig.SetAppPhase(AppPhase.StandbyTracking);
+            if (appConfig.GotNearbyMap) appConfig.SetAppPhase(AppPhase.StandbyTracking);
+            else appConfig.SetAppPhase(AppPhase.Standby);
             await TrackingStop();
             Debug.Log("[AppUIMaster] Tracking task stopped.");
         }

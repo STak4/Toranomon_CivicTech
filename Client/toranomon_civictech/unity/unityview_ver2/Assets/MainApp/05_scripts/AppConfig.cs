@@ -2,6 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum AppMode
+{
+    Unspecified,
+
+    Proposal,
+    Reaction,
+}
+
 public enum AppPhase
 {
     Unspecified,
@@ -22,6 +30,7 @@ public enum AppPhase
 
 public class AppConfig
 {
+    private AppMode _appMode = AppMode.Unspecified;
     private AppPhase _currentPhase = AppPhase.Unspecified;
 
     private bool _madeMap = false; // mapperTCT.GetMap().HasValidMap()
@@ -42,6 +51,7 @@ public class AppConfig
     private ARLogUnit _latestARLog = null;
 
     public event Action<AppPhase, AppPhase> PhaseChangeAction;
+    public event Action<AppMode, AppMode> ModeChangeAction;
 
     public AppPhase GetAppPhase()
     {
@@ -56,7 +66,19 @@ public class AppConfig
             TriggerPhaseChange(oldPhase, newPhase);
         }
     }
-
+    public AppMode GetAppMode()
+    {
+        return _appMode;
+    }
+    public void SetAppMode(AppMode newMode)
+    {
+        if (_appMode != newMode)
+        {
+            AppMode oldMode = _appMode;
+            _appMode = newMode;
+            TriggerModeChange(oldMode, newMode);
+        }
+    }
     public bool MadeMap
     {
         get { return _madeMap; }
@@ -143,7 +165,11 @@ public class AppConfig
         Debug.Log($"Phase changed from {oldPhase} to {newPhase}");
         PhaseChangeAction?.Invoke(oldPhase, newPhase);
     }
-
+    private void TriggerModeChange(AppMode oldMode, AppMode newMode)
+    {
+        Debug.Log($"Mode changed from {oldMode} to {newMode}");
+        ModeChangeAction?.Invoke(oldMode, newMode);
+    }
 }
 
 
