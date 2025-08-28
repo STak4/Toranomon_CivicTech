@@ -12,7 +12,7 @@ public class CompassWorldPoseTCT : MonoBehaviour
 
     private ARWorldPositioningCameraHelper _cameraHelper;
     public ARWorldPositioningCameraHelper CameraHelper => _cameraHelper;
-                    
+
     public void Start()
     {
         _cameraHelper = _arCameraManager.GetComponent<ARWorldPositioningCameraHelper>();
@@ -21,5 +21,14 @@ public class CompassWorldPoseTCT : MonoBehaviour
     {
         float heading = _cameraHelper.TrueHeading;
         _compassImage.rectTransform.rotation = Quaternion.Euler(0, 0, heading);
+    }
+    public double[] GetCurrentLLH()
+    {
+        double[] llh = new double[3]{
+            _cameraHelper.Latitude,
+            _cameraHelper.Longitude,
+            _cameraHelper.Altitude
+        };
+        return llh;
     }
 }

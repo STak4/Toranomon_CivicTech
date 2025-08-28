@@ -579,7 +579,6 @@ public class AppUIMaster : MonoBehaviour
                 appConfig.GotMap = true;
             }
             Debug.Log("[AppUIMaster] Mapping complete and map saved.");
-            // _ = Tracking();
         }
         else
         {
@@ -593,7 +592,7 @@ public class AppUIMaster : MonoBehaviour
         if (serializedMap != null)
         {
             // ◆◆AppConfigにデータを代入◆◆
-            appConfig.LatestMapBytes = serializedMap;
+            appConfig.SetMap(serializedMap);
             _trackerTCT.LoadMap(serializedMap);
         }
         else
@@ -646,6 +645,7 @@ public class AppUIMaster : MonoBehaviour
     public async Task PhotoShoot()
     {
         Texture2D screenshot = _screenCapture.TakeScreenshot();
+        //Texture2D screenshot = await _screenCapture.LoadScreenShotAtLocal("sample001.jpg");
 
         Transform cameraTransform = Camera.main.transform;
         Vector3 photoMoveVec = cameraTransform.forward * _photoGenerator.DistanceFactor;
@@ -654,13 +654,11 @@ public class AppUIMaster : MonoBehaviour
         (photoAnchorPosition, photoAnchorEuler) = _trackerTCT.GetAnchorRelativeTransformVectors(photoAnchorPosition, photoAnchorEuler);
         Vector3 photoAnchorSize = _photoGenerator.GetPhotoObjectSize(screenshot);
 
-        //ARLog arLog = new ARLog(cameraTransform);
         ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
+        string uuid = appConfig.AddARLog(arLog);
+        await _screenCapture.SaveScreenShotAtLocal(screenshot, uuid);
+
         _ = _shootEffect.PlayShootEffect();
-        await Task.Yield();
-        // ◆◆AppConfigにデータを代入◆◆
-        appConfig.LatestARLog = arLog;
-        appConfig.LatestPhotoBytes = screenshot.EncodeToJPG();
 
         //空間にオブジェクトを生成
         bool isWorldPosition = false;
@@ -709,6 +707,7 @@ public class AppUIMaster : MonoBehaviour
             await Submit();
             appConfig.Submitted = true;
             ButtonActiveChange(phase);
+            await NodeStoreModels.SaveThread(appConfig.GetThread());
             Debug.Log("[AppUIMaster] PROPOSAL DONE!!");
         }
         else if (mode == AppMode.Reaction)

@@ -8,6 +8,8 @@ public class AppMaster : MonoBehaviour
     private AppConfig appConfig;
     [SerializeField] private AppUIMaster _appUIMaster;
     [SerializeField] private DebugSystem _debugSystem;
+    [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
+
     public AppConfig AppConfig { get => appConfig; private set => appConfig = value; }
 
     private void Awake()
@@ -76,6 +78,7 @@ public class AppMaster : MonoBehaviour
 
             case AppPhase.Radar:
                 appConfig.SetAppMode(AppMode.Reaction);
+                appConfig.ClearThread();
                 appConfig.MadeMap = false;
                 appConfig.MadePhoto = false;
                 appConfig.Submitted = false;
@@ -101,11 +104,13 @@ public class AppMaster : MonoBehaviour
                     return;
                 }
                 // マップデータ読込後の処理を入れる
+                // ■■■■　ここでデータを呼び出す？　■■■■　appConfig.LoadThread();
                 appConfig.SetAppPhase(AppPhase.StandbyTracking);
                 break;
 
             case AppPhase.Mapping:
                 appConfig.SetAppMode(AppMode.Proposal);
+                appConfig.CreateThread(_compassWorldPoseTCT.GetCurrentLLH());
                 appConfig.MadeMap = false;
                 appConfig.MadePhoto = false;
                 appConfig.Submitted = false;

@@ -47,6 +47,8 @@ public class AppConfig
     private bool _isModeView = false;
     private bool _isRadarView = false;
 
+    private Thread _currentThread = null;
+
     private byte[] _latestMapBytes = null;
     private byte[] _latestPhotoBytes = null;
     private ARLogUnit _latestARLog = null;
@@ -148,6 +150,7 @@ public class AppConfig
         get { return _latestPhotoBytes; }
         set { _latestPhotoBytes = value; }
     }
+
     public Texture2D LatestPhotoTexture
     {
         get
@@ -165,6 +168,53 @@ public class AppConfig
         get { return _latestARLog; }
         set { _latestARLog = value; }
     }
+
+    public void CreateThread(double[] llh)
+    {
+        _currentThread = new Thread();
+        _currentThread.Uuid = Guid.NewGuid().ToString();
+        _currentThread.LLH = llh;
+    }
+
+    public void LoadThread(Thread thread)
+    {
+        _currentThread = thread;
+    }
+    public string AddARLog(ARLogUnit log)
+    {
+        if (_currentThread != null)
+        {
+            log.Uuid = $"{_currentThread.Uuid}_{_currentThread.ARLogSet.ARLogs.Count.ToString("D4")}";
+            _currentThread.ARLogSet.ARLogs.Add(log);
+            return log.Uuid;
+        }
+        else
+        {
+            Debug.LogError("CurrentThread is null. Cannot add ARLog.");
+            return string.Empty;
+        }
+    }
+    public void SetMap(byte[] mapBytes)
+    {
+        if (_currentThread != null)
+        {
+            _currentThread.Map = mapBytes;
+        }
+        else
+        {
+            Debug.LogError("CurrentThread is null. Cannot add Map.");
+        }
+    }
+
+    public void ClearThread()
+    {
+        if (_currentThread != null) _currentThread = null;
+    }
+    public Thread GetThread()
+    {
+        return _currentThread;
+    }
+
 
     private void TriggerPhaseChange(AppPhase oldPhase, AppPhase newPhase)
     {

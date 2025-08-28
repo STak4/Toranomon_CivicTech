@@ -2,12 +2,61 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json;
 
 public class NodeStoreModels
 {
-    public static string ExportThreadJson(Thread thread) => JsonConvert.SerializeObject(thread, Formatting.Indented);
+    public static async Task SaveThread(Thread thread)
+    {
+        string folderPath;
+#if UNITY_ANDROID
+        folderPath = Path.Combine(Application.persistentDataPath);
+#elif UNITY_IOS
+        folderPath = Path.Combine(Application.persistentDataPath, "Documents");
+#else
+        folderPath = Path.Combine(Application.persistentDataPath);
+#endif
+        ResourceUrls resources = new ResourceUrls();
+        string threadUuid = thread.Uuid;
+        int arLogCount = thread.ARLogSet.ARLogs.Count;
+
+        string logFilePath = Path.Combine(folderPath, "logs", $"{threadUuid}.json");
+        string mapFilePath = Path.Combine(folderPath, "maps", $"{threadUuid}.dat");
+        List<string> imageFilePaths = new List<string>();
+        for(int i = 0; i < arLogCount; i++)
+        {
+            string imageFilePath = Path.Combine(folderPath, "images", $"{thread.ARLogSet.ARLogs[i].Uuid}.jpg");
+            imageFilePaths.Add(imageFilePath);
+        }
+        resources.LogUrl = logFilePath;
+        resources.MapUrl = mapFilePath;
+        resources.ImageUrls = imageFilePaths;
+        thread.Resources = resources;
+
+        string json = SerializeThreadJson(thread);
+        byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+        byte[] mapBytes = thread.Map;
+
+        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+        if (!Directory.Exists(Path.Combine(folderPath, "logs"))) Directory.CreateDirectory(Path.Combine(folderPath, "logs"));
+        if (!Directory.Exists(Path.Combine(folderPath, "maps"))) Directory.CreateDirectory(Path.Combine(folderPath, "maps"));
+        if (!Directory.Exists(Path.Combine(folderPath, "images"))) Directory.CreateDirectory(Path.Combine(folderPath, "images"));
+
+        try
+        {
+            await File.WriteAllBytesAsync(logFilePath, jsonBytes);
+            await File.WriteAllBytesAsync(mapFilePath, mapBytes);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to save screenshot: {ex.Message}");
+        }
+    }
+    public static string SerializeThreadJson(Thread thread) => JsonConvert.SerializeObject(thread, Formatting.Indented);
 
     public static string ExportSampleThreadJson(double[] llh = null)
     {
@@ -154,11 +203,6 @@ public class ARLogUnit
         LocalEulerAngles = new double[3];
         LocalScale = new double[3];
     }
-    public ARLogUnit(Transform transform)
-    {
-        Uuid = string.Empty;
-        (LocalPosition, LocalEulerAngles, LocalScale) = ToDoubleArrays(transform);
-    }
     public ARLogUnit(Vector3 position, Vector3 eulerAngles, Vector3 scale)
     {
         Uuid = string.Empty;
@@ -166,14 +210,9 @@ public class ARLogUnit
         LocalEulerAngles = new double[] { eulerAngles.x, eulerAngles.y, eulerAngles.z };
         LocalScale = new double[] { scale.x, scale.y, scale.z };
     }
-    public void SetImage(byte[] image)
-    {
-        Image = image;
-    }
-    public void SetImage(Texture2D texture)
-    {
-        if (texture != null) Image = texture.EncodeToJPG();
-    }
+    // 下記は重くなるので利用を避ける
+    // public void SetImage(byte[] image) => Image = image;
+    // public void SetImage(Texture2D texture) { if (texture != null) Image = texture.EncodeToJPG(); }
 
     public (Vector3 position, Vector3 eulerAngles, Vector3 scale) ToUnityVectors()
     {
@@ -250,6 +289,8 @@ public class ResourceUrls
 {
     [JsonProperty("log_url")]
     public string LogUrl { get; set; } = string.Empty;
+    [JsonIgnore] 
+    public string LogFilePath { get; set; } = string.Empty;
     [JsonProperty("image_url")]
     public List<string> ImageUrls { get; set; } = new List<string>();
     [JsonIgnore] 

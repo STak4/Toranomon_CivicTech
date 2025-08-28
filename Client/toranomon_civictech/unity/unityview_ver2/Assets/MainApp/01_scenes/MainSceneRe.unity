@@ -2452,6 +2452,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _appUIMaster: {fileID: 1141370815}
   _debugSystem: {fileID: 621358309}
+  _compassWorldPoseTCT: {fileID: 1972474197}
 --- !u!114 &1141370817
 MonoBehaviour:
   m_ObjectHideFlags: 0

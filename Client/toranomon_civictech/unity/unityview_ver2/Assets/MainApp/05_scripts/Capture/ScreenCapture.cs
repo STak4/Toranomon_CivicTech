@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Android;
 
@@ -81,26 +82,23 @@ public class ScreenCaptureManager : MonoBehaviour
         RenderTexture.ReleaseTemporary(rt);
         // 変更を適用
         _screenShot.Apply();
-        //◆ローカルへの保存
-        if(_saveToDevice) StartCoroutine(SaveScreenShotAtLocal(_screenShot));
 
         return _screenShot;
     }
 
-    private IEnumerator SaveScreenShotAtLocal(Texture2D scrSht)
+    public async Task SaveScreenShotAtLocal(Texture2D scrSht, string uuid)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
-        string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         string folderPath;
 #if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath, "photo");
+        folderPath = Path.Combine(Application.persistentDataPath, "images");
         // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
 #elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "photo");
+        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
 #else
-        folderPath = Path.Combine(Application.persistentDataPath, "photo");
+        folderPath = Path.Combine(Application.persistentDataPath, "images");
 #endif
-        string filePath = Path.Combine(folderPath, $"screenshot{timestamp}.jpg");
+        string filePath = Path.Combine(folderPath, $"{uuid}.jpg");
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
@@ -108,14 +106,36 @@ public class ScreenCaptureManager : MonoBehaviour
         try
         {
             // ファイルを書き込む
-            File.WriteAllBytes(filePath, originalBytes);
+            await File.WriteAllBytesAsync(filePath, originalBytes);
             ScanMedia(filePath);
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save screenshot: {ex.Message}");
         }
-        yield return null;
+    }
+    public async Task<Texture2D> LoadScreenShotAtLocal(string fileName)
+    {
+        string folderPath;
+#if UNITY_ANDROID
+        folderPath = Path.Combine(Application.persistentDataPath, "images");
+        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
+#elif UNITY_IOS
+        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
+#else
+        folderPath = Path.Combine(Application.persistentDataPath, "images");
+#endif
+        string filePath = Path.Combine(folderPath, fileName);
+        if (!File.Exists(filePath))
+        {
+            Debug.LogError($"Screenshot not found: {filePath}");
+            return null;
+        }
+
+        byte[] fileData = await File.ReadAllBytesAsync(filePath);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(fileData);
+        return texture;
     }
 
     //メディアスキャンを実行してデータが反映されるようにする
