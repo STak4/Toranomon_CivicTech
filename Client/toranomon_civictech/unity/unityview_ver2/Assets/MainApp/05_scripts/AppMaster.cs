@@ -7,6 +7,9 @@ public class AppMaster : MonoBehaviour
 {
     private AppConfig appConfig;
     [SerializeField] private AppUIMaster _appUIMaster;
+    [SerializeField] private DebugSystem _debugSystem;
+    public AppConfig AppConfig { get => appConfig; private set => appConfig = value; }
+
     private void Awake()
     {
         appConfig = new AppConfig();
@@ -74,6 +77,8 @@ public class AppMaster : MonoBehaviour
 
             case AppPhase.Mapping:
                 appConfig.MadeMap = false;
+                appConfig.GotNearbyMap = false;
+                appConfig.GotTracked = false;
                 // ウェイトタイムを入れる(UI側でのARView起動待ち)
                 timeOut = 0;
                 maxWaitTime = 5f; // 最大待機時間5秒

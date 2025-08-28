@@ -1359,6 +1359,17 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 587143825}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &621358309 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4146696030358073179, guid: cac53e9d8800fcd4780dde13abbc30d1, type: 3}
+  m_PrefabInstance: {fileID: 650055063}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8442b26c4866445b9e4714429d79c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &638467926
 GameObject:
   m_ObjectHideFlags: 0
@@ -1519,6 +1530,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -900
       objectReference: {fileID: 0}
+    - target: {fileID: 4146696030358073179, guid: cac53e9d8800fcd4780dde13abbc30d1, type: 3}
+      propertyPath: _appMaster
+      value: 
+      objectReference: {fileID: 1141370816}
     - target: {fileID: 4146696030358073179, guid: cac53e9d8800fcd4780dde13abbc30d1, type: 3}
       propertyPath: _mapperTCT
       value: 
@@ -2428,6 +2443,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _appUIMaster: {fileID: 1141370815}
+  _debugSystem: {fileID: 621358309}
 --- !u!1 &1152001191
 GameObject:
   m_ObjectHideFlags: 0

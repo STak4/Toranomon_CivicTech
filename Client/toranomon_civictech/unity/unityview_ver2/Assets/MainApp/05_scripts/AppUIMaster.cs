@@ -96,6 +96,10 @@ public class AppUIMaster : MonoBehaviour
         {
             MapLoadCompleteGot(success);
         };
+
+        //明示的に初期化
+        _mapperTCT.ClearAllState();
+        _trackerTCT.ClearAllState();
     }
 
     public void PutDebugObjects()
@@ -419,6 +423,20 @@ public class AppUIMaster : MonoBehaviour
         if (appConfig.GotNearbyMap)
         {
             _trackerTCT.StartTracking();
+            float timeout = 5.0f;
+            float elapsed = 0.0f;
+            // 下記フラグ構築が難しいため、疑似的に_deviceMapの状態で判断する
+            await Task.Delay(500);
+            while (_trackerTCT.GetDeviceMapCondition() == false && appConfig.GetAppPhase() == AppPhase.Tracking)
+            {
+                if (elapsed > timeout) break;
+                elapsed += 0.5f;
+                await Task.Delay(500);
+            }
+            if (_trackerTCT.GetDeviceMapCondition() == true)
+            {
+               appConfig.MadeMap = true;
+            }
         }
         else
         {
@@ -426,6 +444,16 @@ public class AppUIMaster : MonoBehaviour
             await Task.Yield();
             appConfig.SetAppPhase(AppPhase.Standby);
         }
+    }
+    private async Task TrackingStop()
+    {
+        _trackerTCT.StopTracking();
+        await Task.Yield();
+        // トラッキング停止時には上記としているが、動作不安定の場合、下記を試す
+        // _mapperTCT.ClearAllState();
+        // await Task.Yield();
+        // _trackerTCT.ClearAllState();
+        // await Task.Yield();
     }
     private void TrackingCompleteGot(bool success)
     {
@@ -447,17 +475,20 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆マッピングの本実行関数◆◆◆◆
     private async Task Mapping()
     {
-        _trackerTCT.ClearAllState();
-        _mapperTCT.ClearAllState();
         _mapperTCT.RunMappingFor(5.0f);
+        await Task.Yield();
         // 動作完了後下記のMappingCompleteGotがいくつか経由して呼ばれる
-        await Task.Yield(); //警告回避一時関数
     }
     private async Task MappingStop()
     {
-        _trackerTCT.ClearAllState();
+        // マッピング停止時には下記順序でtracker側の停止もしないと不安定になる
+        // 停止しない場合、trackingしつづける状態でマッピングを行う
+        // 内部動作としてARDeviceMappingManagerを両者とも使っており、システムで現在の構成は共有している
+        // もしかしたら上記まで踏み込めば、複数のtrackingも可能になるのかもしれない
         _mapperTCT.ClearAllState();
-        await Task.Yield(); //警告回避一時関数
+        await Task.Yield();
+        _trackerTCT.ClearAllState();
+        await Task.Yield();
     }
 
     private void MappingCompleteGot(bool success)
@@ -500,10 +531,13 @@ public class AppUIMaster : MonoBehaviour
         {
             appConfig.SetAppPhase(AppPhase.Tracking);
             await Tracking();
+            Debug.Log("[AppUIMaster] Tracking task run.");
         }
         else
         {
             appConfig.SetAppPhase(AppPhase.StandbyTracking);
+            await TrackingStop();
+            Debug.Log("[AppUIMaster] Tracking task stopped.");
         }
     }
     private async Task TriggerMappingButtonAction()
@@ -513,6 +547,7 @@ public class AppUIMaster : MonoBehaviour
         if (phase != AppPhase.Mapping)
         {
             appConfig.SetAppPhase(AppPhase.Mapping);
+            await TrackingStop();
             await Mapping();
             Debug.Log("[AppUIMaster] Mapping task run.");
         }

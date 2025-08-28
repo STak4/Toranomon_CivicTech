@@ -202,6 +202,7 @@ public class TrackerTCT : MonoBehaviour
 
         Debug.Log("== Setting device map. ==");
         // Set the device map to mapping manager
+        // ◆◆ここがMapperから呼び出せるmapperTCT.GetMap().HasValidMap()にも連動していると思われる
         _deviceMappingManager.SetDeviceMap(_deviceMap);
 
         Debug.Log("== Start tracking.... ==");

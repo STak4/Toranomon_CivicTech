@@ -62,6 +62,8 @@ public class DebugSystem : MonoBehaviour
 
 
     // 各種追加参照
+    [SerializeField] private  AppMaster _appMaster;
+    private static AppConfig appConfig;
     [SerializeField] private TrackerTCT _trackerTCT;
     private static TrackerTCT trackerTCT => Instance ? Instance._trackerTCT : null;
     [SerializeField] private MapperTCT _mapperTCT;
@@ -106,6 +108,10 @@ public class DebugSystem : MonoBehaviour
         //スタート時の表示非表示設定
         debugLogs.transform.gameObject.SetActive(activeAtStart);
 
+    }
+    public void Start()
+    {
+        appConfig = _appMaster.AppConfig;
     }
 
     private void Update()
@@ -239,10 +245,15 @@ public class DebugSystem : MonoBehaviour
             $"Date and Time : {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")} \n" +
             $"Touch Count : {Input.touchCount}\n" +
             $"\n" +
-            $"Tracking state : {trackerTCT.GetTrackingState()}\n" +
-            $"Tracking device map : {trackerTCT.GetDeviceMapCondition()}\n" +
-            $"Has valid map : {mapperTCT.GetMap().HasValidMap()}\n" +
-            $"Mapping Node Count : {mapperTCT.GetMap().DeviceMapNodes.Count}\n" +
+            $"config - currentPhase : {appConfig.GetAppPhase()}\n" +
+            $"\n" +
+            $"Has valid map / cs : {mapperTCT.GetMap().HasValidMap()} / {appConfig.MadeMap}\n" +
+            $"config - madePhoto : {appConfig.MadePhoto}\n" +
+            $"config - submitted : {appConfig.Submitted}\n" +
+            $"config - gotMapList : {appConfig.GotMapList}\n" +
+            $"Tracking device map / cs : {trackerTCT.GetDeviceMapCondition()} / {appConfig.GotNearbyMap}\n" +
+            $"Tracking state / cs : {trackerTCT.GetTrackingState()} / {appConfig.GotTracked}\n" +
+            $"\n" +
             $"WPS Status : {wpsManager.Status.ToString()}\n" +
             $"\n" +
             $"Camera local position : {Camera.main.transform.localPosition}\n" +

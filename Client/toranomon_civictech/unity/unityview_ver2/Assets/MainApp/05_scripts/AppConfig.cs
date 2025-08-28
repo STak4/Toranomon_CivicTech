@@ -24,12 +24,13 @@ public class AppConfig
 {
     private AppPhase _currentPhase = AppPhase.Unspecified;
 
-    private bool _madeMap = false;
+    private bool _madeMap = false; // mapperTCT.GetMap().HasValidMap()
     private bool _madePhoto = false;
     private bool _submitted = false;
     private bool _gotMapList = false;
-    private bool _gotNearbyMap = false;
-    private bool _gotTracked = false;
+    // 下記が_deviceMapの状態と連動を想定しているが、実情は異なる。動作には概ね問題なし。
+    private bool _gotNearbyMap = false; // trackerTCT.GetDeviceMapCondition()
+    private bool _gotTracked = false; // trackerTCT.GetTrackingState()
 
     private bool _isInformationView = false;
     private bool _isArView = false;
