@@ -106,3 +106,6 @@ InitTestScene*.unity*
 
 # exclude light ship setting
 /[Aa]ssets/XR/Settings/LightshipSettings.asset
+
+# ardk + macでのキャッシュファイル？の回避
+/data/*
