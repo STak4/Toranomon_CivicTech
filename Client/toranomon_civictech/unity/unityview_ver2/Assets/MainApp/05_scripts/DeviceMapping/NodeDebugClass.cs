@@ -3,7 +3,6 @@ using UnityEngine.Networking;
 using System.IO;
 using System.Collections;
 using System.Threading.Tasks;
-using WorldPoseSamples;
 using Newtonsoft.Json;
 using System.Threading;
 
@@ -48,8 +47,8 @@ public class NodeDebugClass : MonoBehaviour
 
         string imagePath = Path.Combine(Application.persistentDataPath, "image.jpg");
         string mapPath = Path.Combine(Application.persistentDataPath, "map.dat");
-        //string baseUrl = "http://localhost:3000/toranomon/";
-        string baseUrl = "https://api.kuwa-ya.co.jp/toranomon/";
+        string baseUrl = "http://localhost:3000/toranomon/";
+        //string baseUrl = "https://api.kuwa-ya.co.jp/toranomon/";
         string apiCreateUrl = baseUrl + "createThread";
         string apiReadUrl = baseUrl + "readThread";
 

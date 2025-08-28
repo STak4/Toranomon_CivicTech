@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.VisualScripting;
-using WorldPoseSamples;
-
+using Niantic.Lightship.AR.WorldPositioning;
 
 
 #if UNITY_ANDROID
@@ -67,6 +66,8 @@ public class DebugSystem : MonoBehaviour
     private static TrackerTCT trackerTCT => Instance ? Instance._trackerTCT : null;
     [SerializeField] private MapperTCT _mapperTCT;
     private static MapperTCT mapperTCT => Instance ? Instance._mapperTCT : null;
+    [SerializeField] private ARWorldPositioningManager _wpsManager;
+    private static ARWorldPositioningManager wpsManager => Instance ? Instance._wpsManager : null;
     [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
     private static CompassWorldPoseTCT compassWorldPoseTCT => Instance ? Instance._compassWorldPoseTCT : null;
 
@@ -242,6 +243,7 @@ public class DebugSystem : MonoBehaviour
             $"Tracking device map : {trackerTCT.GetDeviceMapCondition()}\n" +
             $"Has valid map : {mapperTCT.GetMap().HasValidMap()}\n" +
             $"Mapping Node Count : {mapperTCT.GetMap().DeviceMapNodes.Count}\n" +
+            $"WPS Status : {wpsManager.Status.ToString()}\n" +
             $"\n" +
             $"Camera local position : {Camera.main.transform.localPosition}\n" +
             $"Camera local euler angles : {Camera.main.transform.localEulerAngles}\n" +
