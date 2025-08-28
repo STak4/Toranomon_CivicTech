@@ -24,8 +24,8 @@ public enum AppPhase
     Radar,
 
     StandbyTracking,
-    Tracking,
-    Tracked,
+    Searching,
+    OnTracking,
 }
 
 public class AppConfig
@@ -38,12 +38,13 @@ public class AppConfig
     private bool _submitted = false;
     private bool _gotMapList = false;
     // 下記が_deviceMapの状態と連動を想定しているが、実情は異なる。動作には概ね問題なし。
-    private bool _gotNearbyMap = false; // trackerTCT.GetDeviceMapCondition()
-    private bool _gotTracked = false; // trackerTCT.GetTrackingState()
+    private bool _gotMap = false; // trackerTCT.GetDeviceMapCondition()
+    private bool _gotTracking = false; // trackerTCT.GetTrackingState()
 
     private bool _isInformationView = false;
     private bool _isArView = false;
     private bool _isStatusView = false;
+    private bool _isModeView = false;
     private bool _isRadarView = false;
 
     private byte[] _latestMapBytes = null;
@@ -99,15 +100,15 @@ public class AppConfig
         get { return _gotMapList; }
         set { _gotMapList = value; }
     }
-    public bool GotNearbyMap
+    public bool GotMap
     {
-        get { return _gotNearbyMap; }
-        set { _gotNearbyMap = value; }
+        get { return _gotMap; }
+        set { _gotMap = value; }
     }
-    public bool GotTracked
+    public bool GotTracking
     {
-        get { return _gotTracked; }
-        set { _gotTracked = value; }
+        get { return _gotTracking; }
+        set { _gotTracking = value; }
     }
 
 
@@ -115,6 +116,11 @@ public class AppConfig
     {
         get { return _isArView; }
         set { _isArView = value; }
+    }
+    public bool IsModeView
+    {
+        get { return _isModeView; }
+        set { _isModeView = value; }
     }
     public bool IsStatusView
     {

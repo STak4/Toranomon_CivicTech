@@ -251,8 +251,8 @@ public class DebugSystem : MonoBehaviour
             $"config - madePhoto : {appConfig.MadePhoto}\n" +
             $"config - submitted : {appConfig.Submitted}\n" +
             $"config - gotMapList : {appConfig.GotMapList}\n" +
-            $"Tracking device map / cs : {trackerTCT.GetDeviceMapCondition()} / {appConfig.GotNearbyMap}\n" +
-            $"Tracking state / cs : {trackerTCT.GetTrackingState()} / {appConfig.GotTracked}\n" +
+            $"Tracking device map / cs : {trackerTCT.GetDeviceMapCondition()} / {appConfig.GotMap}\n" +
+            $"Tracking state / cs : {trackerTCT.GetTrackingState()} / {appConfig.GotTracking}\n" +
             $"\n" +
             $"WPS Status : {wpsManager.Status.ToString()}\n" +
             $"\n" +

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR.ARFoundation;
+using System.Data.Odbc;
 
 public class AppUIMaster : MonoBehaviour
 {
@@ -18,6 +19,8 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private ScreenCaptureManager _screenCapture;
     [SerializeField] private PhotoGenerator _photoGenerator;
 
+    [SerializeField] private GameObject _modeView;
+    [SerializeField] private TMP_Text _modeText;
     [SerializeField] private GameObject _statusView;
     [SerializeField] private TMP_Text _statusText;
     [SerializeField] private GameObject _informationView;
@@ -46,10 +49,12 @@ public class AppUIMaster : MonoBehaviour
         // 明示的な初期化(関数だと不整合をおこす可能性を考慮)
         _arCameraBackground.enabled = false;
         _arCameraManager.enabled = false;
+        _modeView.SetActive(false);
         _statusView.SetActive(false);
         _informationView.SetActive(false);
         _radarView.SetActive(false);
 
+        ModeOnOff(true);
         StatusOnOff(true);
 
         ARViewOnOff(false);
@@ -61,6 +66,10 @@ public class AppUIMaster : MonoBehaviour
             StatusChange(newPhase);
             ButtonActiveChange(newPhase);
             await ViewActiveChange(newPhase);
+        };
+        appConfig.ModeChangeAction += (oldMode, newMode) =>
+        {
+            ModeChange(newMode);
         };
         _mapperTCT._onMappingComplete += (success) =>
         {
@@ -127,6 +136,10 @@ public class AppUIMaster : MonoBehaviour
         }
     }
 
+    private void ModeChange(AppMode newMode)
+    {
+        _modeText.text = $"{newMode.ToString().ToUpper()}";
+    }
     private void StatusChange(AppPhase newPhase)
     {
         _statusText.text = $"{newPhase.ToString().ToUpper()}";
@@ -137,31 +150,41 @@ public class AppUIMaster : MonoBehaviour
     }
     private void ButtonActiveChange(AppPhase newPhase)
     {
+        AppMode mode = appConfig.GetAppMode();
+        bool madePhoto = appConfig.MadePhoto;
+        bool madeMap = appConfig.MadeMap;
+        bool submitted = appConfig.Submitted;
+
         switch (newPhase)
         {
             case AppPhase.Initialization:
                 _radarButton.interactable = false;
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
+
                 _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
 
             case AppPhase.Standby:
-                _radarButton.interactable = true;
+                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = true;
-                if (appConfig.IsArView) _mappingButton.interactable = true;
+
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
 
             case AppPhase.Radar:
-                _radarButton.interactable = true;
+                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = true;
+
                 _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
@@ -171,6 +194,7 @@ public class AppUIMaster : MonoBehaviour
                 _radarButton.interactable = false;
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
+
                 _mappingButton.interactable = true;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
@@ -195,34 +219,41 @@ public class AppUIMaster : MonoBehaviour
                 */
 
             case AppPhase.StandbyTracking:
-                _radarButton.interactable = true;
+                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                else _radarButton.interactable = false;
                 if (appConfig.IsArView) _trackingButton.interactable = true;
                 else _trackingButton.interactable = false;
+
                 _arViewButton.interactable = true;
-                if (appConfig.IsArView) _mappingButton.interactable = true;
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
 
-            case AppPhase.Tracking:
+            case AppPhase.Searching:
                 _radarButton.interactable = false;
                 _trackingButton.interactable = true;
                 _arViewButton.interactable = false;
+
                 _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
 
-            case AppPhase.Tracked:
-                _radarButton.interactable = true;
+            case AppPhase.OnTracking:
+                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                else _radarButton.interactable = false;
                 if (appConfig.IsArView) _trackingButton.interactable = true;
                 else _trackingButton.interactable = false;
                 _arViewButton.interactable = true;
-                if (appConfig.IsArView) _mappingButton.interactable = true;
+
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
-                _photoShootButton.interactable = true;
-                _submitButton.interactable = false;
+                if (!submitted) _photoShootButton.interactable = true;
+                else _photoShootButton.interactable = false;
+                if (madePhoto && !submitted) _submitButton.interactable = true;
+                else _submitButton.interactable = false;
                 break;
 
             default:
@@ -240,11 +271,11 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Standby:
-                InformationOnOff(false);
+                InformationOnOff(true);
+                InformationChange("Please select Radar or Mapping.");
                 break;
 
             case AppPhase.Radar:
-                ARViewOnOff(false);
                 RadarOnOff(true);
                 InformationOnOff(false);
                 break;
@@ -263,8 +294,16 @@ public class AppUIMaster : MonoBehaviour
                     if (appConfig.GetAppPhase() != AppPhase.Mapping || appConfig.MadeMap) break;
                     InformationOnOff(true);
                 }
-                InformationOnOff(true);
-                InformationChange("Mapping done!");
+                if (appConfig.MadeMap)
+                {
+                    InformationOnOff(true);
+                    InformationChange("Mapping done!");
+                }
+                else
+                {
+                    InformationOnOff(true);
+                    InformationChange("Mapping failed...");
+                }
                 break;
             /*
             case AppPhase.Mapped:
@@ -289,24 +328,33 @@ public class AppUIMaster : MonoBehaviour
                 InformationOnOff(true);
                 InformationChange("Please start tracking.");
                 break;
-            case AppPhase.Tracking:
+            case AppPhase.Searching:
                 ARViewOnOff(true);
                 RadarOnOff(false);
                 InformationOnOff(true);
-                InformationChange("Please see around for tracking...");
-                while(appConfig.GetAppPhase() == AppPhase.Tracking && !appConfig.GotTracked)
+                InformationChange("Please look around to search for a track...");
+                while(appConfig.GetAppPhase() == AppPhase.Searching && !appConfig.GotTracking)
                 {
                     await Task.Delay(500);
-                    if (appConfig.GetAppPhase() != AppPhase.Tracking || appConfig.GotTracked) break;
+                    if (appConfig.GetAppPhase() != AppPhase.Searching || appConfig.GotTracking) break;
                     InformationOnOff(false);
                     await Task.Delay(500);
-                    if (appConfig.GetAppPhase() != AppPhase.Tracking || appConfig.GotTracked) break;
+                    if (appConfig.GetAppPhase() != AppPhase.Searching || appConfig.GotTracking) break;
                     InformationOnOff(true);
                 }
+                if (appConfig.GotTracking)
+                {
+                    InformationOnOff(true);
+                    InformationChange("On Tracking!");
+                }
+                else
+                {
+                    InformationOnOff(true);
+                    InformationChange("Search failed...");
+                }
                 InformationOnOff(true);
-                InformationChange("Tracking done!");
                 break;
-            case AppPhase.Tracked:
+            case AppPhase.OnTracking:
                 ARViewOnOff(true);
                 RadarOnOff(false);
                 InformationOnOff(false);
@@ -314,6 +362,20 @@ public class AppUIMaster : MonoBehaviour
             default:
                 break;
         }                
+    }
+    private void ModeOnOff(bool active)
+    {
+        bool isActive = _modeView.activeSelf;
+        if (!active && isActive)
+        {
+            _modeView.SetActive(false);
+            appConfig.IsModeView = false;
+        }
+        else if (active && !isActive)
+        {
+            _modeView.SetActive(true);
+            appConfig.IsModeView = true;
+        }
     }
     private void StatusOnOff(bool activate)
     {
@@ -393,12 +455,12 @@ public class AppUIMaster : MonoBehaviour
     {
         if (success)
         {
-            appConfig.GotNearbyMap = true;
+            appConfig.GotMap = true;
             Debug.Log("[AppUIMaster] Map load complete.");
         }
         else
         {
-            appConfig.GotNearbyMap = false;
+            appConfig.GotMap = false;
             Debug.LogWarning("[AppUIMaster] Map load complete but no valid mapping data was created.");
         }
     }
@@ -408,6 +470,7 @@ public class AppUIMaster : MonoBehaviour
         bool isActive = _radarView.activeSelf;
         RadarOnOff(!isActive);
         bool willActivate = !isActive;
+        if(willActivate) InformationOnOff(false);
 
         if (appConfig.GetAppPhase() == AppPhase.Standby && willActivate)
         {
@@ -435,14 +498,14 @@ public class AppUIMaster : MonoBehaviour
     private async Task Tracking()
     {
         //■■■■下記は本来GetAppPhaseの方が無難だが、複数からの呼び出しがあるため■■■■
-        if (appConfig.GotNearbyMap)
+        if (appConfig.GotMap)
         {
             _trackerTCT.StartTracking();
             float timeout = 5.0f;
             float elapsed = 0.0f;
             // 下記フラグ構築が難しいため、疑似的に_deviceMapの状態で判断する
             await Task.Delay(500);
-            while (_trackerTCT.GetDeviceMapCondition() == false && appConfig.GetAppPhase() == AppPhase.Tracking)
+            while (_trackerTCT.GetDeviceMapCondition() == false && appConfig.GetAppPhase() == AppPhase.Searching)
             {
                 if (elapsed > timeout) break;
                 elapsed += 0.5f;
@@ -455,7 +518,7 @@ public class AppUIMaster : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[AppUIMaster] Tracking cancelled because no nearby map is loaded.");
+            Debug.LogWarning("[AppUIMaster] Tracking cancelled because map is not loaded.");
             await Task.Yield();
             appConfig.SetAppPhase(AppPhase.Standby);
         }
@@ -474,16 +537,16 @@ public class AppUIMaster : MonoBehaviour
     {
         if (success)
         {
-            if (appConfig.GetAppPhase() == AppPhase.Tracking)
+            if (appConfig.GetAppPhase() == AppPhase.Searching)
             {
-                appConfig.GotTracked = true;
+                appConfig.GotTracking = true;
             } 
-            Debug.Log("[AppUIMaster] Tracking complete and tracking data saved.");
+            Debug.Log("[AppUIMaster] On tracking and track data saved.");
         }
         else
         {
-            appConfig.GotTracked = false;
-            Debug.LogWarning("[AppUIMaster] Tracking complete but no valid tracking data was created.");
+            appConfig.GotTracking = false;
+            Debug.LogWarning("[AppUIMaster] Search Track finished but no valid tracking data was created.");
         }
     }
 
@@ -513,7 +576,7 @@ public class AppUIMaster : MonoBehaviour
             if (appConfig.GetAppPhase() == AppPhase.Mapping)
             {
                 appConfig.MadeMap = true;
-                appConfig.GotNearbyMap = true;
+                appConfig.GotMap = true;
             }
             Debug.Log("[AppUIMaster] Mapping complete and map saved.");
             // _ = Tracking();
@@ -521,8 +584,8 @@ public class AppUIMaster : MonoBehaviour
         else
         {
             appConfig.MadeMap = false;
-            appConfig.GotNearbyMap = false;
-            Debug.LogWarning("[AppUIMaster] Mapping complete but no valid map was created.");
+            appConfig.GotMap = false;
+            Debug.LogWarning("[AppUIMaster] Mapping cancelled, no valid map was created.");
         }
     }
     private void MapUpdateGot(byte[] serializedMap)
@@ -543,15 +606,15 @@ public class AppUIMaster : MonoBehaviour
     private async Task TriggerTrackingButtonAction()
     {
         AppPhase phase = appConfig.GetAppPhase();
-        if (phase != AppPhase.Tracking)
+        if (phase != AppPhase.Searching)
         {
-            appConfig.SetAppPhase(AppPhase.Tracking);
+            appConfig.SetAppPhase(AppPhase.Searching);
             await Tracking();
             Debug.Log("[AppUIMaster] Tracking task run.");
         }
         else
         {
-            if (appConfig.GotNearbyMap) appConfig.SetAppPhase(AppPhase.StandbyTracking);
+            if (appConfig.GotMap) appConfig.SetAppPhase(AppPhase.StandbyTracking);
             else appConfig.SetAppPhase(AppPhase.Standby);
             await TrackingStop();
             Debug.Log("[AppUIMaster] Tracking task stopped.");
@@ -607,16 +670,22 @@ public class AppUIMaster : MonoBehaviour
     private async Task TriggerPhotoShootButtonAction()
     {
         AppPhase phase = appConfig.GetAppPhase();
-        if (phase == AppPhase.Mapped)
+        AppMode mode = appConfig.GetAppMode();
+        // AppPhase phase = appConfig.GetAppPhase();
+        if (mode == AppMode.Proposal)
         {
             await PhotoShoot();
             appConfig.MadePhoto = true;
+            // ボタンの状態を変更のために同フェーズで実行
+            ButtonActiveChange(phase);
             Debug.Log("[AppUIMaster] MADE PHOTO!!");
         }
-        else if (phase == AppPhase.Tracked)
+        else if (mode == AppMode.Reaction)
         {
             await PhotoShoot();
-            // appConfig.MadePhoto = true;
+            appConfig.MadePhoto = true;
+            // ボタンの状態を変更のために同フェーズで実行
+            ButtonActiveChange(phase);
             Debug.Log("[AppUIMaster] ADD PHOTO!!");
         }
         else
@@ -634,15 +703,24 @@ public class AppUIMaster : MonoBehaviour
     private async Task TriggerSubmitButtonAction()
     {
         AppPhase phase = appConfig.GetAppPhase();
-        if (phase != AppPhase.PhotoShot)
-        {
-
-        }
-        else
+        AppMode mode = appConfig.GetAppMode();
+        if (mode == AppMode.Proposal)
         {
             await Submit();
             appConfig.Submitted = true;
-            Debug.Log("[AppUIMaster] SUBMIT DONE!!");
+            ButtonActiveChange(phase);
+            Debug.Log("[AppUIMaster] PROPOSAL DONE!!");
+        }
+        else if (mode == AppMode.Reaction)
+        {
+            await Submit();
+            appConfig.Submitted = true;
+            ButtonActiveChange(phase);
+            Debug.Log("[AppUIMaster] REACTION DONE!!");
+        }
+        else
+        {
+
         }
     }
 
