@@ -11,7 +11,14 @@ public class SaveDataFolderOpener
     {
         string path = Application.persistentDataPath;
         if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+
+#if UNITY_EDITOR_WIN
         System.Diagnostics.Process.Start("explorer.exe", path.Replace('/', '\\'));
+#elif UNITY_EDITOR_OSX
+        EditorUtility.RevealInFinder(path);
+#else
+        Debug.LogWarning("この機能はWindowsとMacのみ対応しています。");
+#endif
     }
 #endif
-} 
+}
