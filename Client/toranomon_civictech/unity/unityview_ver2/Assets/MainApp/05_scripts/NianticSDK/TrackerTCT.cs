@@ -258,11 +258,43 @@ public class TrackerTCT : MonoBehaviour
     /// AddObjectToAnchor(GameObject go): 指定したGameObjectをアンカーの子オブジェクトとして追加します。
     /// ◆補助関数◆
     /// </summary>
-    public void AddObjectToAnchor(GameObject go)
+    public void AddObjectToAnchor(GameObject go, bool world = true)
     {
-        go.transform.SetParent(Anchor.transform);
+        go.transform.SetParent(Anchor.transform, world);
         //SetParent(parent) → ワールド座標を維持
         //SetParent(parent, false) → ローカル座標を維持（親に対して固定配置） 
+    }
+
+
+    public Transform GetAnchorRelativeTransform(Transform target)
+    {
+        // 一時GameObjectを生成し、アンカー基準のTransform情報をセット
+        GameObject temp = new GameObject("AnchorRelativeTransformTemp");
+        temp.transform.position = _anchor.transform.InverseTransformPoint(target.position);
+        temp.transform.rotation = Quaternion.Inverse(_anchor.transform.rotation) * target.rotation;
+        temp.transform.localScale = target.localScale; // スケールはそのまま
+
+        Transform result = temp.transform;
+        // 必要なら一時オブジェクトを削除する（呼び出し側で管理推奨）
+        // GameObject.Destroy(temp);
+
+        return result;
+    }
+
+    /// <summary>
+    /// アンカー基準でposition, rotation(euler), scaleを返す
+    /// </summary>
+    public (Vector3 relativePosition, Vector3 relativeEulerAngles) GetAnchorRelativeTransformVectors(
+        Vector3 position, Vector3 eulerAngles)
+    {
+        Vector3 relativePosition = _anchor.transform.InverseTransformPoint(position);
+
+        Quaternion worldRot = Quaternion.Euler(eulerAngles);
+        Quaternion anchorRotInv = Quaternion.Inverse(_anchor.transform.rotation);
+        Quaternion relativeRot = anchorRotInv * worldRot;
+        Vector3 relativeEulerAngles = relativeRot.eulerAngles;
+
+        return (relativePosition, relativeEulerAngles);
     }
 
     public TrackingState GetTrackingState()

@@ -14,6 +14,10 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private MapperTCT _mapperTCT;
     [SerializeField] private TrackerTCT _trackerTCT;
 
+    [SerializeField] private ShootEffect _shootEffect;
+    [SerializeField] private ScreenCaptureManager _screenCapture;
+    [SerializeField] private PhotoGenerator _photoGenerator;
+
     [SerializeField] private GameObject _statusView;
     [SerializeField] private TMP_Text _statusText;
     [SerializeField] private GameObject _informationView;
@@ -36,8 +40,8 @@ public class AppUIMaster : MonoBehaviour
         _arViewButton.onClick.AddListener(() => TriggerARViewButtonAction());
 
         _mappingButton.onClick.AddListener(() => _ = TriggerMappingButtonAction());
-        _photoShootButton.onClick.AddListener(() => TriggerPhotoShootButtonAction());
-        _submitButton.onClick.AddListener(() => TriggerSubmitButtonAction());
+        _photoShootButton.onClick.AddListener(() => _ = TriggerPhotoShootButtonAction());
+        _submitButton.onClick.AddListener(() => _ = TriggerSubmitButtonAction());
 
         // 明示的な初期化(関数だと不整合をおこす可能性を考慮)
         _arCameraBackground.enabled = false;
@@ -216,7 +220,7 @@ public class AppUIMaster : MonoBehaviour
                 _arViewButton.interactable = true;
                 if (appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
-                _photoShootButton.interactable = false;
+                _photoShootButton.interactable = true;
                 _submitButton.interactable = false;
                 break;
 
@@ -514,6 +518,7 @@ public class AppUIMaster : MonoBehaviour
     {
         if (serializedMap != null)
         {
+            // ◆◆AppConfigにデータを代入◆◆
             appConfig.LatestMapBytes = serializedMap;
             _trackerTCT.LoadMap(serializedMap);
         }
@@ -558,20 +563,63 @@ public class AppUIMaster : MonoBehaviour
             Debug.Log("[AppUIMaster] Mapping task stopped.");
         }
     }
-    private void TriggerPhotoShootButtonAction()
+
+
+    // ◆◆◆◆撮影の本実行関数◆◆◆◆
+
+    // デバッグ用にパブリック化、実装はprivateにする
+    public async Task PhotoShoot()
+    {
+        Texture2D screenshot = _screenCapture.TakeScreenshot();
+
+        Transform cameraTransform = Camera.main.transform;
+        Vector3 photoMoveVec = cameraTransform.forward * _photoGenerator.DistanceFactor;
+        Vector3 photoAnchorPosition = cameraTransform.position + photoMoveVec;
+        Vector3 photoAnchorEuler = cameraTransform.eulerAngles;
+        (photoAnchorPosition, photoAnchorEuler) = _trackerTCT.GetAnchorRelativeTransformVectors(photoAnchorPosition, photoAnchorEuler);
+        Vector3 photoAnchorSize = _photoGenerator.GetPhotoObjectSize(screenshot);
+
+        //ARLog arLog = new ARLog(cameraTransform);
+        ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
+        _ = _shootEffect.PlayShootEffect();
+        await Task.Yield();
+        // ◆◆AppConfigにデータを代入◆◆
+        appConfig.LatestARLog = arLog;
+        appConfig.LatestPhotoBytes = screenshot.EncodeToJPG();
+
+        //空間にオブジェクトを生成
+        bool isWorldPosition = false;
+        _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+    }
+
+    private async Task TriggerPhotoShootButtonAction()
     {
         AppPhase phase = appConfig.GetAppPhase();
-        if (phase != AppPhase.Mapped)
+        if (phase == AppPhase.Mapped)
         {
-
-        }
-        else
-        {
+            await PhotoShoot();
             appConfig.MadePhoto = true;
             Debug.Log("[AppUIMaster] MADE PHOTO!!");
         }
+        else if (phase == AppPhase.Tracked)
+        {
+            await PhotoShoot();
+            // appConfig.MadePhoto = true;
+            Debug.Log("[AppUIMaster] ADD PHOTO!!");
+        }
+        else
+        {
+
+        }
     }
-    private void TriggerSubmitButtonAction()
+
+    // ◆◆◆◆投稿の本実行関数◆◆◆◆
+    private async Task Submit()
+    {
+        await Task.Yield();
+    }
+
+    private async Task TriggerSubmitButtonAction()
     {
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.PhotoShot)
@@ -580,6 +628,7 @@ public class AppUIMaster : MonoBehaviour
         }
         else
         {
+            await Submit();
             appConfig.Submitted = true;
             Debug.Log("[AppUIMaster] SUBMIT DONE!!");
         }

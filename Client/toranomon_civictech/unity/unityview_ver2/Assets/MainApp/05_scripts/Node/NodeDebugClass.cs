@@ -1,12 +1,10 @@
 using UnityEngine;
 using UnityEngine.Networking;
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Threading;
-
-using Thread = NodeStoreModels.Thread;
 
 public class NodeDebugClass : MonoBehaviour
 {
@@ -45,14 +43,17 @@ public class NodeDebugClass : MonoBehaviour
 
         Debug.Log(json);
 
-        string imagePath = Path.Combine(Application.persistentDataPath, "image.jpg");
+        string imagePathA = Path.Combine(Application.persistentDataPath, "sample1.jpg");
+        string imagePathB = Path.Combine(Application.persistentDataPath, "sample2.jpg");
+        string imagePathC = Path.Combine(Application.persistentDataPath, "sample3.jpg");
+        List<string> imagePaths = new List<string> { imagePathA, imagePathB, imagePathC };
         string mapPath = Path.Combine(Application.persistentDataPath, "map.dat");
         string baseUrl = "http://localhost:3000/toranomon/";
         //string baseUrl = "https://api.kuwa-ya.co.jp/toranomon/";
         string apiCreateUrl = baseUrl + "createThread";
         string apiReadUrl = baseUrl + "readThread";
 
-        string createResponse = await CreateThreadAsync(apiCreateUrl, json, imagePath, mapPath);
+        string createResponse = await CreateThreadAsync(apiCreateUrl, json, imagePaths, mapPath);
         string readResponse = await ReadThreadAsync(apiReadUrl);
 
         // JSONフォーマット整形
@@ -127,13 +128,21 @@ public class NodeDebugClass : MonoBehaviour
         }
     }
 
-    public async Task<string> CreateThreadAsync(string url, string json, string imagePath, string mapPath)
+    public async Task<string> CreateThreadAsync(string url, string json, List<string> imagePaths, string mapPath)
     {
         var form = new WWWForm();
         form.AddField("json", json);
 
-        if (File.Exists(imagePath))
-            form.AddBinaryData("image", File.ReadAllBytes(imagePath), "image.jpg", "image/jpeg");
+        // 複数画像対応
+        for (int i = 0; i < imagePaths.Count; i++)
+        {
+            string imagePath = imagePaths[i];
+            if (File.Exists(imagePath))
+            {
+                form.AddBinaryData("image", File.ReadAllBytes(imagePath), Path.GetFileName(imagePath), "image/jpeg");
+            }
+        }
+
         if (File.Exists(mapPath))
             form.AddBinaryData("map", File.ReadAllBytes(mapPath), "map.dat", "application/octet-stream");
 

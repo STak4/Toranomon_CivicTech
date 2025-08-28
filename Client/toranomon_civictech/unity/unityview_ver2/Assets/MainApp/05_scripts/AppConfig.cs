@@ -38,6 +38,8 @@ public class AppConfig
     private bool _isRadarView = false;
 
     private byte[] _latestMapBytes = null;
+    private byte[] _latestPhotoBytes = null;
+    private ARLogUnit _latestARLog = null;
 
     public event Action<AppPhase, AppPhase> PhaseChangeAction;
 
@@ -112,6 +114,28 @@ public class AppConfig
     {
         get { return _latestMapBytes; }
         set { _latestMapBytes = value; }
+    }
+    public byte[] LatestPhotoBytes
+    {
+        get { return _latestPhotoBytes; }
+        set { _latestPhotoBytes = value; }
+    }
+    public Texture2D LatestPhotoTexture
+    {
+        get
+        {
+            if (_latestPhotoBytes != null)
+            {
+                Texture2D texture = new Texture2D(2, 2);
+                if (texture.LoadImage(_latestPhotoBytes)) return texture;
+            }
+            return null;
+        }
+    }
+    public ARLogUnit LatestARLog
+    {
+        get { return _latestARLog; }
+        set { _latestARLog = value; }
     }
 
     private void TriggerPhaseChange(AppPhase oldPhase, AppPhase newPhase)

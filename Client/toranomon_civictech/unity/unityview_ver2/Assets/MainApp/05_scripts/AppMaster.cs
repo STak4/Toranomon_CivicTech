@@ -27,18 +27,15 @@ public class AppMaster : MonoBehaviour
             => await PhaseControlHandler(oldPhase, newPhase);
     }
     float timeDelta = 0;
-    float intervalTime = 5f;
+    float intervalTime = 3f;
     private void Update()
     {
-        if (appConfig.GotTracked)
+        timeDelta += Time.deltaTime;
+        if(timeDelta > intervalTime)
         {
-
-            timeDelta += Time.deltaTime;
-            if(timeDelta > intervalTime)
-            {
-                timeDelta = 0;
-                _appUIMaster.PutDebugObjects();
-            }
+            //if(appConfig.GotTracked) _ = _appUIMaster.PhotoShoot();
+            // _ = _appUIMaster.PhotoShoot();
+            timeDelta = 0;
         }
     }
     private void OnApplicationQuit()

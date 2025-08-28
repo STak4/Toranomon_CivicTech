@@ -1,19 +1,19 @@
 using System;
 using System.IO;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Android;
 
-public class ScreenCapture : MonoBehaviour
+public class ScreenCaptureManager : MonoBehaviour
 {
-    public static ScreenCapture Instance { set; get; }
+    public static ScreenCaptureManager Instance { set; get; }
 
-    private static Camera mainCamera;
-    private static bool captureExecution;
-    public static Texture2D screenShot;
-    private static Texture2D localSavePhoto;
+    [SerializeField] private bool _saveToDevice;
+
+    private Camera _mainCamera;
+    private Texture2D _screenShot;
+    private bool _captureExecution;
+    public bool CaptureExecution { get => _captureExecution; private set => _captureExecution = value; }
 
     private void Awake()
     {
@@ -34,76 +34,71 @@ public class ScreenCapture : MonoBehaviour
             Destroy(this);
         }
 
-        captureExecution = false;
+        _captureExecution = false;
     }
 
     private void CameraCheck()
     {
         if (Camera.main != null)
         {
-            mainCamera = Camera.main;
+            _mainCamera = Camera.main;
         }
         else
         {
             Debug.Log("You don't have main camera object at hierarchy, we change no-active ScreenCapture script");
             Destroy(this);
         }
-
-
     }
 
-    public static void TakeScreenshot()
+    public Texture2D TakeScreenshot()
     {
+        // 下記がUnity標準のスクショ取得方法らしいが、エラー出すため使わない
+        //Texture2D _screenShot = ScreenCapture.CaptureScreenshotAsTexture();
+
         // スクショ用の、ARカメラ描画結果を格納するRenderTextureを用意する
-        //RenderTexture rt = RenderTexture.GetTemporary(Screen.width * 2, Screen.height * 2, 24, RenderTextureFormat.ARGB32);
         RenderTexture rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
 
         // 用意したRenderTextureに書き込む
         //レンダーテクスチャの現状をいったん外す
-        RenderTexture prevTarget = mainCamera.targetTexture;
+        RenderTexture prevTarget = _mainCamera.targetTexture;
         //カメラのレンダリングを書き込み用のRnderTextureに一時的に移動
-        mainCamera.targetTexture = rt;
+        _mainCamera.targetTexture = rt;
         //メインカメラを一度レンダリング（≒rtに書き込み）
-        mainCamera.Render();
+        _mainCamera.Render();
         //カメラのレンダリング先を戻す
-        mainCamera.targetTexture = prevTarget;
+        _mainCamera.targetTexture = prevTarget;
 
         // RenderTextureのままでは保存できないので、Textureに変換する
         //アクティブなレンダーテクスチャをいったん外す
         RenderTexture prevActive = RenderTexture.active;
         //アクティブなレンダーテクスチャをrtにする
         RenderTexture.active = rt;
-        //ローカル保存するデータを格納するTexture2Dを作成する
-        //localSavePhoto = new Texture2D(mainCamera.pixelWidth * 2, mainCamera.pixelHeight * 2, TextureFormat.ARGB32, false);
-        //ピクセルデータをアクティブなレンダーテクスチャ情報から読み込む
-        //localSavePhoto.ReadPixels(new Rect(0, 0, localSavePhoto.width, localSavePhoto.height), 0, 0, false);
         //スクリーンショットを格納するTexture2Dを作成する
-        screenShot = new Texture2D(mainCamera.pixelWidth, mainCamera.pixelHeight, TextureFormat.ARGB32, false);
+        _screenShot = new Texture2D(_mainCamera.pixelWidth, _mainCamera.pixelHeight, TextureFormat.ARGB32, false);
         //ピクセルデータをアクティブなレンダーテクスチャ情報から読み込む
-        screenShot.ReadPixels(new Rect(0, 0, screenShot.width, screenShot.height), 0, 0, false);
+        _screenShot.ReadPixels(new Rect(0, 0, _screenShot.width, _screenShot.height), 0, 0, false);
         RenderTexture.active = prevActive;
         RenderTexture.ReleaseTemporary(rt);
         // 変更を適用
-        //localSavePhoto.Apply();
-        screenShot.Apply();
+        _screenShot.Apply();
         //◆ローカルへの保存
-        //Instance.StartCoroutine(SaveScreenShotAtLocal(localSavePhoto));
-        Instance.StartCoroutine(SaveScreenShotAtLocal(screenShot));
+        if(_saveToDevice) StartCoroutine(SaveScreenShotAtLocal(_screenShot));
 
+        return _screenShot;
     }
 
-    private static IEnumerator SaveScreenShotAtLocal(Texture2D scrSht)
+    private IEnumerator SaveScreenShotAtLocal(Texture2D scrSht)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
         string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         string folderPath;
-        //string folderPath = Path.Combine(Application.persistentDataPath, "enxross");
 #if UNITY_ANDROID
-        folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
+        folderPath = Path.Combine(Application.persistentDataPath, "photo");
+        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
 #elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "enxross");
+        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "photo");
 #else
-        folderPath = Path.Combine(Application.persistentDataPath, "enxross");
+        folderPath = Path.Combine(Application.persistentDataPath, "photo");
 #endif
         string filePath = Path.Combine(folderPath, $"screenshot{timestamp}.jpg");
         if (!Directory.Exists(folderPath))
@@ -115,18 +110,16 @@ public class ScreenCapture : MonoBehaviour
             // ファイルを書き込む
             File.WriteAllBytes(filePath, originalBytes);
             ScanMedia(filePath);
-            //Debug.Log("check save done."); //■■DEBUG LOG
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save screenshot: {ex.Message}");
         }
-        //Debug.Log("check end coroutine."); //■■DEBUG LOG
         yield return null;
     }
 
     //メディアスキャンを実行してデータが反映されるようにする
-    private static void ScanMedia(string fileName)
+    private void ScanMedia(string fileName)
     {
         if (Application.platform != RuntimePlatform.Android) return;
 #if UNITY_ANDROID
@@ -138,16 +131,5 @@ public class ScreenCapture : MonoBehaviour
         Handheld.StopActivityIndicator();
 #endif
     }
-
-public static bool GetCaptureCondition()
-    {
-        return captureExecution;
-    }
-
-    public static void SetCaptureCondition(bool bl)
-    {
-        captureExecution = bl;
-    }
-
 
 }
