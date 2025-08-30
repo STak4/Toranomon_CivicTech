@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/models.dart';
@@ -70,7 +71,7 @@ class MarkerIconState {
 
 /// マーカーアイコンリポジトリプロバイダー
 @riverpod
-MarkerIconRepository markerIconRepository(MarkerIconRepositoryRef ref) {
+MarkerIconRepository markerIconRepository(Ref ref) {
   return MarkerIconRepositoryImpl();
 }
 
@@ -272,14 +273,14 @@ class MarkerIconNotifier extends _$MarkerIconNotifier {
 
 /// 特定の投稿のアイコンを取得するプロバイダー
 @riverpod
-BitmapDescriptor postMarkerIcon(PostMarkerIconRef ref, String postId) {
+BitmapDescriptor postMarkerIcon(Ref ref, String postId) {
   final markerIconNotifier = ref.watch(markerIconNotifierProvider.notifier);
   return markerIconNotifier.getIconForPost(postId);
 }
 
 /// 複数投稿のアイコンを一括取得するプロバイダー
 @riverpod
-Map<String, BitmapDescriptor> postsMarkerIcons(PostsMarkerIconsRef ref, List<String> postIds) {
+Map<String, BitmapDescriptor> postsMarkerIcons(Ref ref, List<String> postIds) {
   final markerIconNotifier = ref.watch(markerIconNotifierProvider.notifier);
   final result = <String, BitmapDescriptor>{};
   

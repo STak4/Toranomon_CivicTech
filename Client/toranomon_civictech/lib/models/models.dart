@@ -1,8 +1,3 @@
-/// 地図ベースSNSアプリのデータモデル
-/// 
-/// このファイルはすべてのデータモデルをエクスポートします
-library models;
-
 export 'user.dart';
 export 'post.dart';
 export 'position.dart';

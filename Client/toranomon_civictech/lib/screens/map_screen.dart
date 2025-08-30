@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
@@ -10,8 +9,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/models.dart';
 import '../providers/post_provider.dart';
 import '../providers/marker_icon_provider.dart';
-import '../providers/room_provider.dart' as room_providers;
-import '../repositories/post_repository_impl.dart';
 import '../utils/app_logger.dart';
 import 'post_creation_screen.dart';
 
@@ -28,8 +25,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final Set<Marker> _markers = {};
   bool _isLoadingLocation = false;
   Post? _selectedPost;
-  final _roomIdController = TextEditingController();
-  bool _showRoomControls = false;
+
 
   // 東京駅を初期位置として設定
   static const CameraPosition _initialPosition = CameraPosition(
@@ -78,7 +74,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
-    _roomIdController.dispose();
     AppLogger.i('MapSampleScreen: リソースを解放しました');
     super.dispose();
   }
@@ -477,176 +472,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             },
           ),
 
-          // ルーム情報表示
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Consumer(
-              builder: (context, ref, child) {
-                final currentRoom = ref.watch(room_providers.currentRoomProvider);
-                final postCount = ref.watch(postProvider).posts.length;
-                
-                return GestureDetector(
-                  onTap: () {
-                    if (currentRoom != null) {
-                      _showRoomInfo(currentRoom.id);
-                    }
-                  },
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.group,
-                            size: 16,
-                            color: currentRoom != null ? Colors.green : Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                currentRoom != null 
-                                    ? 'ルーム: ${currentRoom.id.substring(0, 8)}...'
-                                    : 'デフォルトルーム',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                '投稿: $postCount件',
-                                style: const TextStyle(fontSize: 10, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                          if (currentRoom != null) ...[
-                            const SizedBox(width: 4),
-                            const Icon(Icons.info_outline, size: 12),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
 
-          // ルームコントロール
-          if (_showRoomControls)
-            Positioned(
-              bottom: 100,
-              left: 16,
-              right: 16,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'ルーム参加',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _showRoomControls = false;
-                                _roomIdController.clear();
-                              });
-                            },
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _roomIdController,
-                        decoration: const InputDecoration(
-                          labelText: 'ルームID',
-                          hintText: 'ルームIDを入力してください',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        onSubmitted: (_) => _joinRoom(),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showRoomControls = false;
-                                  _roomIdController.clear();
-                                });
-                              },
-                              child: const Text('キャンセル'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _joinRoom,
-                              child: const Text('参加'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+
+
         ],
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // ルーム共有ボタン
-          FloatingActionButton(
-            heroTag: "shareRoom",
-            mini: true,
-            onPressed: _shareRoom,
-            tooltip: 'ルームを共有',
-            backgroundColor: Colors.blue,
-            child: const Icon(Icons.share, color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          // Firebase Storage テストボタン
-          FloatingActionButton(
-            heroTag: "storageTest",
-            mini: true,
-            onPressed: _testFirebaseStorage,
-            tooltip: 'Storage 接続テスト',
-            backgroundColor: Colors.purple,
-            child: const Icon(Icons.cloud_upload, color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          // ルーム参加ボタン
-          FloatingActionButton(
-            heroTag: "joinRoom",
-            mini: true,
-            onPressed: () {
-              setState(() {
-                _showRoomControls = !_showRoomControls;
-              });
-            },
-            tooltip: 'ルームに参加',
-            backgroundColor: _showRoomControls ? Colors.orange : Colors.green,
-            child: Icon(
-              _showRoomControls ? Icons.close : Icons.group_add,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
+
           // 投稿統計表示ボタン
           Consumer(
             builder: (context, ref, child) {
@@ -740,16 +574,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     try {
       // 現在の表示範囲を取得
       final bounds = await _mapController!.getVisibleRegion();
-      
-      // 現在のルームIDを取得
-      final currentRoomId = ref.read(room_providers.currentRoomIdProvider);
 
-      AppLogger.i('MapScreen: 表示範囲内の投稿を読み込み開始 - roomId: $currentRoomId');
+      AppLogger.i('MapScreen: 表示範囲内の投稿を読み込み開始');
       
-      // 投稿を読み込み（ルームIDを指定）
+      // 投稿を読み込み
       await ref.read(postProvider.notifier).loadPosts(
         bounds: bounds,
-        roomId: currentRoomId,
       );
       
       // マーカーを更新
@@ -1061,14 +891,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// 投稿作成ダイアログを表示
   void _showPostCreationDialog(LatLng position) {
-    final currentRoomId = ref.read(room_providers.currentRoomIdProvider) ?? 'default';
+
     
     showDialog(
       context: context,
       builder: (context) => PostCreationDialog(
         latitude: position.latitude,
         longitude: position.longitude,
-        roomId: currentRoomId,
+        roomId: 'default', // デフォルトルームID
       ),
     ).then((result) async {
       if (result is Post) {
@@ -1112,407 +942,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// ルーム共有機能
-  Future<void> _shareRoom() async {
-    try {
-      AppLogger.i('ルーム共有開始');
-      
-      final roomNotifier = ref.read(room_providers.roomProvider.notifier);
-      final roomId = await roomNotifier.createRoom();
-      
-      if (roomId != null) {
-        // ルームIDをクリップボードにコピー
-        await Clipboard.setData(ClipboardData(text: roomId));
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('ルームID「$roomId」をクリップボードにコピーしました'),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: '共有',
-                onPressed: () => _showRoomShareDialog(roomId),
-              ),
-            ),
-          );
-        }
-        
-        AppLogger.i('ルーム共有完了 - roomId: $roomId');
-      } else {
-        _showErrorSnackBar('ルームの作成に失敗しました');
-      }
-    } catch (e, stackTrace) {
-      AppLogger.e('ルーム共有に失敗', e, stackTrace);
-      _showErrorSnackBar('ルーム共有中にエラーが発生しました');
-    }
-  }
-
-  /// ルーム参加機能
-  Future<void> _joinRoom() async {
-    final roomId = _roomIdController.text.trim();
-    
-    if (roomId.isEmpty) {
-      _showErrorSnackBar('ルームIDを入力してください');
-      return;
-    }
-    
-    try {
-      AppLogger.i('ルーム参加開始 - roomId: $roomId');
-      
-      final roomNotifier = ref.read(room_providers.roomProvider.notifier);
-      final success = await roomNotifier.joinRoom(roomId);
-      
-      if (success) {
-        // 投稿を再読み込み（新しいルームの投稿を取得）
-        await _loadPostsInCurrentView();
-        
-        // リアルタイム同期を開始
-        _startRealtimeSync();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('ルーム「$roomId」に参加しました'),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: '詳細',
-                onPressed: () => _showRoomInfo(roomId),
-              ),
-            ),
-          );
-          
-          // ルームコントロールを非表示
-          setState(() {
-            _showRoomControls = false;
-            _roomIdController.clear();
-          });
-        }
-        
-        AppLogger.i('ルーム参加完了 - roomId: $roomId');
-      } else {
-        _showErrorSnackBar('ルームへの参加に失敗しました');
-      }
-    } catch (e, stackTrace) {
-      AppLogger.e('ルーム参加に失敗 - roomId: $roomId', e, stackTrace);
-      _showErrorSnackBar('ルーム参加中にエラーが発生しました');
-    }
-  }
-
-  /// ルーム共有ダイアログを表示
-  void _showRoomShareDialog(String roomId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ルーム共有'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('以下のルームIDを他のユーザーと共有してください:'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      roomId,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: roomId));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('ルームIDをコピーしました'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.copy),
-                    tooltip: 'コピー',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '他のユーザーはこのIDを使用してルームに参加し、同じマーカー情報を共有できます。',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// リアルタイム同期を開始
-  void _startRealtimeSync() {
-    AppLogger.i('リアルタイムマーカー同期を開始');
-    
-    // 定期的に投稿を更新（実際のアプリではFirestoreのリアルタイムリスナーを使用）
-    Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        _loadPostsInCurrentView();
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  /// ルーム情報を表示
-  void _showRoomInfo(String roomId) {
-    final currentRoom = ref.read(room_providers.currentRoomProvider);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ルーム情報'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ルームID: $roomId'),
-            const SizedBox(height: 8),
-            if (currentRoom != null) ...[
-              Text('作成日時: ${_formatDateTime(currentRoom.createdAt)}'),
-              Text('投稿数: ${currentRoom.postIds.length}件'),
-            ],
-            const SizedBox(height: 12),
-            const Text(
-              'このルームでは他のユーザーと投稿を共有できます。新しい投稿は自動的に同期されます。',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _leaveRoom();
-            },
-            child: const Text('退出'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _shareCurrentRoom();
-            },
-            child: const Text('共有'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 現在のルームを共有
-  Future<void> _shareCurrentRoom() async {
-    final currentRoomId = ref.read(room_providers.currentRoomIdProvider);
-    
-    if (currentRoomId != null) {
-      await Clipboard.setData(ClipboardData(text: currentRoomId));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('ルームID「$currentRoomId」をコピーしました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-  }
-
-  /// ルームから退出
-  Future<void> _leaveRoom() async {
-    try {
-      AppLogger.i('ルームから退出');
-      
-      // デフォルトルームに戻る
-      await ref.read(room_providers.roomProvider.notifier).setCurrentRoom(null);
-      
-      // 投稿を再読み込み
-      await _loadPostsInCurrentView();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('デフォルトルームに戻りました'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      AppLogger.e('ルーム退出に失敗', e, stackTrace);
-      _showErrorSnackBar('ルーム退出中にエラーが発生しました');
-    }
-  }
-
-  /// エラーメッセージを表示
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
 
 
-  /// Firebase Storage 接続テストを実行
-  Future<void> _testFirebaseStorage() async {
-    try {
-      // ローディング表示
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              ),
-              SizedBox(width: 12),
-              Text('Firebase Storage 接続テスト中...'),
-            ],
-          ),
-          duration: Duration(seconds: 10),
-        ),
-      );
 
-      // PostRepository を取得してテスト実行
-      final postRepository = ref.read(postRepositoryProvider);
-      final isSuccess = await (postRepository as PostRepositoryImpl).testStorageConnection();
 
-      // 結果を表示
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  isSuccess ? Icons.check_circle : Icons.error,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  isSuccess 
-                      ? '✅ Firebase Storage 接続成功'
-                      : '❌ Firebase Storage 接続失敗',
-                ),
-              ],
-            ),
-            backgroundColor: isSuccess ? Colors.green : Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
 
-        // 失敗時は詳細情報を表示
-        if (!isSuccess) {
-          _showStorageSetupDialog();
-        }
-      }
-    } catch (e, stackTrace) {
-      AppLogger.e('Storage テスト実行に失敗', e, stackTrace);
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Storage テスト実行エラー'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
-  /// Firebase Storage 設定ガイドを表示
-  void _showStorageSetupDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.cloud_upload, color: Colors.purple),
-              SizedBox(width: 8),
-              Text('Firebase Storage 設定'),
-            ],
-          ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Firebase Storage が設定されていません。',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              Text('設定手順:'),
-              SizedBox(height: 8),
-              Text('1. Firebase Console にアクセス'),
-              Text('2. 左メニュー → Storage'),
-              Text('3. 「始める」をクリック'),
-              Text('4. テストモードを選択'),
-              Text('5. ロケーション: asia-northeast1'),
-              SizedBox(height: 12),
-              Text(
-                'セキュリティルール:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'allow read, write: if true;',
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  backgroundColor: Color(0xFFF5F5F5),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('閉じる'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _testFirebaseStorage(); // 再テスト
-              },
-              child: const Text('再テスト'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
+
+
+
 
   /// 地図情報を表示する
   void _showMapInfo(BuildContext context) {

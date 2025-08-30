@@ -181,7 +181,6 @@ class MapWithCustomMarkersExample extends ConsumerStatefulWidget {
 
 class _MapWithCustomMarkersExampleState 
     extends ConsumerState<MapWithCustomMarkersExample> {
-  GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
 
   @override
@@ -198,7 +197,7 @@ class _MapWithCustomMarkersExampleState
       ),
       body: GoogleMap(
         onMapCreated: (GoogleMapController controller) {
-          _mapController = controller;
+          // マップコントローラーの設定（必要に応じて使用）
         },
         initialCameraPosition: const CameraPosition(
           target: LatLng(35.6762, 139.6503), // 東京駅

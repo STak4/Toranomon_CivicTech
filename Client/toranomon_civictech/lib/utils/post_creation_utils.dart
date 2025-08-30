@@ -136,6 +136,8 @@ class PostCreationUtils {
         return null;
       }
 
+      if (!context.mounted) return null;
+      
       switch (option) {
         case 'dialog':
           return await showPostCreationDialog(context, position, roomId: roomId);
@@ -204,13 +206,15 @@ class PostCreationUtils {
         roomId: roomId,
       );
 
-      if (post != null) {
+      if (post != null && context.mounted) {
         // 成功時のフィードバック
         showPostCreatedSnackBar(context, post);
       }
     } catch (e, stackTrace) {
       AppLogger.e('地図タップ処理に失敗', e, stackTrace);
-      showPostCreationErrorSnackBar(context, e.toString());
+      if (context.mounted) {
+        showPostCreationErrorSnackBar(context, e.toString());
+      }
     }
   }
 }

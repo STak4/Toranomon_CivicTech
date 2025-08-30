@@ -16,7 +16,7 @@ class PostCreationScreen extends ConsumerStatefulWidget {
     super.key,
     required this.latitude,
     required this.longitude,
-    required this.roomId,
+    this.roomId = 'default',
   });
 
   final double latitude;
@@ -489,7 +489,7 @@ class PostCreationDialog extends ConsumerStatefulWidget {
     super.key,
     required this.latitude,
     required this.longitude,
-    required this.roomId,
+    this.roomId = 'default',
   });
 
   final double latitude;
