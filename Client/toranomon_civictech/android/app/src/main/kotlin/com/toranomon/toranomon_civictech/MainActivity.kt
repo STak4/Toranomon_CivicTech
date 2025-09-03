@@ -1,4 +1,4 @@
-package com.example.toranomon_civictech
+package com.toranomon.toranomon_civictech
 
 import io.flutter.embedding.android.FlutterActivity
 

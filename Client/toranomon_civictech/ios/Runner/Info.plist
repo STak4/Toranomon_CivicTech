@@ -63,9 +63,11 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(PRODUCT_NAME) uses Microphone</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app needs photo library access to save edited images</string>
+	<string>生成・編集された画像をギャラリーに保存するために写真ライブラリへのアクセスが必要です</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs photo library access to select images for editing and posts</string>
+	<string>画像の選択・編集・投稿のために写真ライブラリへのアクセスが必要です</string>
+	<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
