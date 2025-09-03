@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR.ARFoundation;
-using System.Data.Odbc;
 
 public class AppUIMaster : MonoBehaviour
 {
