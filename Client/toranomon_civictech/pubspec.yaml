@@ -43,6 +43,7 @@ dependencies:
   flutter_dotenv:
   logger:
   crypto:
+  intl:
 
   # Firebase dependencies
   firebase_core:
@@ -75,6 +76,7 @@ dependencies:
 
   # HTTP Client & API
   dio:
+  http:
   retrofit:
   json_annotation:
   

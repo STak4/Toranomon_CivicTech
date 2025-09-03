@@ -218,7 +218,7 @@ final brushDrawingProvider =
     );
 
 typedef _$BrushDrawing = AutoDisposeNotifier<BrushState>;
-String _$canvasInpaintingHash() => r'd58d08c0283c709c180e09034f6d0a86b0c18141';
+String _$canvasInpaintingHash() => r'28a7951313f900ae78d1ae59be3a86f09e6ba622';
 
 /// Canvas Inpaintingプロバイダー
 ///
