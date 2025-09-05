@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,6 +39,9 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] public Button _submitButton;
 
     [SerializeField] private GameObject _photoObject;
+
+    private GameObject _generatedPhotoObject;
+    private string _generatedPhotoId;
 
     public void Initialize()
     {
@@ -254,9 +258,9 @@ public class AppUIMaster : MonoBehaviour
 
                 if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
-                if (!submitted) _photoShootButton.interactable = true;
+                if (!madePhoto) _photoShootButton.interactable = true;
                 else _photoShootButton.interactable = false;
-                if (madePhoto && !submitted) _submitButton.interactable = true;
+                if (madePhoto && !submitted) _submitButton.interactable = false;
                 else _submitButton.interactable = false;
                 break;
 
@@ -291,6 +295,7 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Radar:
+                ARViewOnOff(false);
                 RadarOnOff(true);
                 InformationOnOff(false);
                 break;
@@ -462,21 +467,33 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
     private async Task RadarSearch()
     {
+        Debug.Log("[AppUIMaster] RadarSearch start.");
         string uuid = "75d5414a-996e-4f0b-8ae8-2ccc818b0735";
         string mapFolder = "maps";
-        string logFolder = "logs";
-        string ImageFolder = "images";
-
         string mapFileName = $"{uuid}.dat";
-        string mapPath = Path.Combine(Application.persistentDataPath, mapFolder, mapFileName);
-        await _trackerTCT.LoadMapFromLocal(mapPath);
-
+        string logFolder = "logs";
         string logFileName = $"{uuid}.json";
-        string logPath = Path.Combine(Application.persistentDataPath, logFolder, logFileName);
+        string imageFolder = "images";
+        string folderPath = "";
+#if UNITY_ANDROID
+        folderPath = Application.persistentDataPath;
+#elif UNITY_IOS
+        folderPath = Path.Combine(Application.persistentDataPath, "Documents");
+#else
+        folderPath = Application.persistentDataPath;
+#endif
+
+        string mapFolderPath = Path.Combine(folderPath, mapFolder);
+        string mapPath = Path.Combine(mapFolderPath, mapFileName);
+        await _trackerTCT.LoadMapFromLocal(mapPath);
+        Debug.Log("[AppUIMaster] Map load triggered.");
+
+        string logFolderPath = Path.Combine(folderPath, logFolder);
+        string logPath = Path.Combine(logFolderPath, logFileName);
         Thread threadData = await NodeStoreModels.DeserializeThreadJsonFromFile(logPath);
 
         List<string> imageFileNames = new List<string>();
-        string imageFolderPath = Path.Combine(Application.persistentDataPath, ImageFolder);
+        string imageFolderPath = Path.Combine(folderPath, imageFolder);
         if (Directory.Exists(imageFolderPath))
         {
             var files = Directory.GetFiles(imageFolderPath, "*.jpg");
@@ -487,6 +504,7 @@ public class AppUIMaster : MonoBehaviour
                     imageFileNames.Add(Path.GetFileName(file));
                 }
             }
+            Debug.Log($"[AppUIMaster] Found {imageFileNames.Count} images for this thread.");
         }
         if (!string.IsNullOrEmpty(threadData.Uuid))
         {
@@ -514,20 +532,20 @@ public class AppUIMaster : MonoBehaviour
 
     public async Task TriggerRadarButtonAction()
     {
-        bool radarButtonActive = _radarButton.enabled;
-        if (!radarButtonActive) return;
+        // bool radarButtonActive = _radarButton.enabled;
+        // if (!radarButtonActive) return;
 
         bool isActive = _radarView.activeSelf;
         RadarOnOff(!isActive);
         bool willActivate = !isActive;
-        if(willActivate) InformationOnOff(false);
+        if (willActivate) InformationOnOff(false);
 
-        if (appConfig.GetAppPhase() == AppPhase.Standby && willActivate)
+        if (appConfig.GetAppPhase() == AppPhase.Standby)
         {
             appConfig.SetAppPhase(AppPhase.Radar);
             await RadarSearch();
         }
-        else if (appConfig.GetAppPhase() == AppPhase.Radar && !willActivate)
+        else if (appConfig.GetAppPhase() == AppPhase.Radar)
         {
             appConfig.SetAppPhase(AppPhase.Standby);
         }
@@ -566,7 +584,7 @@ public class AppUIMaster : MonoBehaviour
             }
             if (_trackerTCT.GetDeviceMapCondition() == true)
             {
-               appConfig.MadeMap = true;
+                appConfig.MadeMap = true;
             }
         }
         else
@@ -593,7 +611,7 @@ public class AppUIMaster : MonoBehaviour
             if (appConfig.GetAppPhase() == AppPhase.Searching)
             {
                 appConfig.GotTracking = true;
-            } 
+            }
             Debug.Log("[AppUIMaster] On tracking and track data saved.");
         }
         else
@@ -714,14 +732,15 @@ public class AppUIMaster : MonoBehaviour
         Vector3 photoAnchorSize = _photoGenerator.GetPhotoObjectSize(screenshot);
 
         ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
-        string uuid = appConfig.AddARLog(arLog);
-        string filePath = await _screenCapture.SaveScreenShotAtLocal(screenshot, uuid);
+        string uuidWithIndex = appConfig.AddARLog(arLog);
+        string filePath = await _screenCapture.SaveScreenShotAtLocal(screenshot, uuidWithIndex);
 
         _ = _shootEffect.PlayShootEffect();
 
         //空間にオブジェクトを生成
         bool isWorldPosition = false;
-        _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+        _generatedPhotoObject = _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+        _generatedPhotoId = uuidWithIndex;
 
         return filePath;
     }
@@ -794,5 +813,62 @@ public class AppUIMaster : MonoBehaviour
 
         }
     }
+
+    // ◆◆◆◆再投稿の関数◆◆◆◆
+    public async Task Recapture(string reWritePath)
+    {
+        Debug.Log("[AppUIMaster] Recapture start.");
+        await _screenCapture.ClearScreenshotAtLocal(reWritePath);
+        if (_generatedPhotoObject != null)
+        {
+            Destroy(_generatedPhotoObject);
+            _generatedPhotoObject = null;
+        }
+        appConfig.RemoveARLog(_generatedPhotoId);
+        appConfig.MadePhoto = false;
+        AppPhase phase = appConfig.GetAppPhase();
+        ButtonActiveChange(phase);
+    }
+
+    // ◆◆◆◆生成完了の関数◆◆◆◆
+    public async Task Generated(string path, string reWritePath)
+    {
+        Debug.Log("[AppUIMaster] Generated start.");
+        if (string.IsNullOrEmpty(path))
+        {
+            Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
+            return;
+        }
+        byte[] imageBytes;
+        try
+        {
+            imageBytes = await File.ReadAllBytesAsync(path);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to read image file at {path}. Exception: {ex.Message}");
+            return;
+        }
+        try
+        {
+            if (!string.IsNullOrEmpty(reWritePath))
+            {
+                await File.WriteAllBytesAsync(reWritePath, imageBytes);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to write image file at {reWritePath}. Exception: {ex.Message}");
+        }
+
+        Texture2D texture = new Texture2D(2, 2);
+        if (!texture.LoadImage(imageBytes))
+        {
+            Debug.LogError("[FlutterDebugUI] ViewPhoto: Failed to load image data into texture");
+            return;
+        }
+        _photoGenerator.UpdateTexture(texture);
+    }
+
 
 }

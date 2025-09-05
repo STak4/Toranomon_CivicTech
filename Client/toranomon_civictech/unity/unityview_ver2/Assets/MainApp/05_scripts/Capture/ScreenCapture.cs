@@ -86,7 +86,7 @@ public class ScreenCaptureManager : MonoBehaviour
         return _screenShot;
     }
 
-    public async Task<string> SaveScreenShotAtLocal(Texture2D scrSht, string uuid)
+    public async Task<string> SaveScreenShotAtLocal(Texture2D scrSht, string uuidWithIndex)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
         string folderPath;
@@ -98,7 +98,7 @@ public class ScreenCaptureManager : MonoBehaviour
 #else
         folderPath = Path.Combine(Application.persistentDataPath, "images");
 #endif
-        string filePath = Path.Combine(folderPath, $"{uuid}.jpg");
+        string filePath = Path.Combine(folderPath, $"{uuidWithIndex}.jpg");
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
@@ -116,12 +116,26 @@ public class ScreenCaptureManager : MonoBehaviour
             return string.Empty;
         }
     }
+    public async Task ClearScreenshotAtLocal(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            try
+            {
+                File.Delete(filePath);
+                await Task.Yield();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to delete screenshot: {ex.Message}");
+            }
+        }
+    }
     public async Task<Texture2D> LoadScreenShotAtLocal(string fileName)
     {
         string folderPath;
 #if UNITY_ANDROID
         folderPath = Path.Combine(Application.persistentDataPath, "images");
-        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
 #elif UNITY_IOS
         folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
 #else

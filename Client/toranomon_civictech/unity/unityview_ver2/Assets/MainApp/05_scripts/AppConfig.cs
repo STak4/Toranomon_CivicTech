@@ -194,6 +194,25 @@ public class AppConfig
             return string.Empty;
         }
     }
+    public void RemoveARLog(string uuid)
+    {
+        if (_currentThread != null)
+        {
+            ARLogUnit logToRemove = _currentThread.ARLogSet.ARLogs.Find(log => log.Uuid == uuid);
+            if (logToRemove != null)
+            {
+                _currentThread.ARLogSet.ARLogs.Remove(logToRemove);
+            }
+            else
+            {
+                Debug.LogWarning($"ARLog with UUID {uuid} not found in the current thread.");
+            }
+        }
+        else
+        {
+            Debug.LogError("CurrentThread is null. Cannot remove ARLog.");
+        }
+    }
     public void SetMap(byte[] mapBytes)
     {
         if (_currentThread != null)

@@ -33,6 +33,7 @@ public class FlutterDebugUI : MonoBehaviour
 
     bool gotAwake = false;
     string pathData = "";
+    string submitPathData = "C:\\Users\\ryo_0\\AppData\\LocalLow\\ToranomonCivicTech\\TCT007\\DSC_5812.JPG";
     double latitude = 35.666924;
     double longitude = 139.747533;
     private void Awake()
@@ -44,7 +45,7 @@ public class FlutterDebugUI : MonoBehaviour
         _setLocationButton.onClick.AddListener(() => SetLocationButton(latitude, longitude));
 
         _recaptureButton.onClick.AddListener(() => RecaptureButton());
-        _generatedButton.onClick.AddListener(() => GeneratedButton(pathData));
+        _generatedButton.onClick.AddListener(() => GeneratedButton(submitPathData));
 
         _voteButtonA.onClick.AddListener(() => VoteButton(0));
         _voteButtonB.onClick.AddListener(() => VoteButton(1));
@@ -135,14 +136,17 @@ public class FlutterDebugUI : MonoBehaviour
 
     private void RecaptureButton()
     {
+        _postView.SetActive(false);
         SendMessageToUnity(FlutterMessageName.Recapture);
     }
-    private void GeneratedButton(string path)
+    private void GeneratedButton(string generatedPath)
     {
+        pathData = generatedPath;
+        _postView.SetActive(false);
         FlutterMessageData generateData = new FlutterMessageData
         {
             NameType = FlutterMessageName.Generated,
-            Path = path
+            Path = generatedPath
         };
         SendMessageToUnity(FlutterMessageName.Generated, generateData);
     }
@@ -188,6 +192,7 @@ public class FlutterDebugUI : MonoBehaviour
                 break;
         }
     }
+    // Flutter画面上に見立てたUIに写真を表示する
     private async Task ViewPhoto(string path)
     {
         if (string.IsNullOrEmpty(path))

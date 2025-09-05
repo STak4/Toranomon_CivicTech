@@ -16,13 +16,15 @@ public class FlutterConnectManager : MonoBehaviour
     [SerializeField] private Button _quitButton = null!;
 
     private bool _isCommandProcessing = false;
+    
+    private string _keepPathForReWrite = "";
 
     public void Initialize()
     {
         _unityMessageManager.OnMessage += ReceiveMessageFromFlutter;
         _isCommandProcessing = false;
 
-        _quitButton.onClick.AddListener(async() => await SendFlutterCommand(FlutterMessageName.Quit));
+        _quitButton.onClick.AddListener(async () => await SendFlutterCommand(FlutterMessageName.Quit));
 
         // AppUIに接続する処理を並べる
         // if (_appUIMaster != null && _appUIMaster._arViewButton != null)
@@ -40,7 +42,8 @@ public class FlutterConnectManager : MonoBehaviour
         _ = SendFlutterCommand(FlutterMessageName.Awake);
     }
     public void SendPhotoShoot(string path)
-    {
+    { 
+        _keepPathForReWrite = path;
         FlutterMessageData data = new FlutterMessageData
         {
             NameType = FlutterMessageName.Shoot,
@@ -178,16 +181,16 @@ public class FlutterConnectManager : MonoBehaviour
 
             // ◆下記は中途動作
             case FlutterMessageName.Recapture:
-                // ◆◆◆◆必要時応じて関数実行◆◆◆◆
-                await BlankTask();
                 Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Recapture");
+                await _appUIMaster.Recapture(_keepPathForReWrite);
                 break;
 
             // ◆下記はPathデータ受領の上で保存実行（未開発）
             case FlutterMessageName.Generated:
-                // ◆◆◆◆関数実行開発◆◆◆◆
-                await BlankTask();
                 Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Generated");
+                string path = message.Data?.Path ?? "";
+                if (!string.IsNullOrEmpty(path)) await _appUIMaster.Generated(path, _keepPathForReWrite);
+                else { }
                 break;
 
             case FlutterMessageName.Back:
