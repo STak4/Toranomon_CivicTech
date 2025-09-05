@@ -86,7 +86,7 @@ public class ScreenCaptureManager : MonoBehaviour
         return _screenShot;
     }
 
-    public async Task SaveScreenShotAtLocal(Texture2D scrSht, string uuid)
+    public async Task<string> SaveScreenShotAtLocal(Texture2D scrSht, string uuid)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
         string folderPath;
@@ -108,10 +108,12 @@ public class ScreenCaptureManager : MonoBehaviour
             // ファイルを書き込む
             await File.WriteAllBytesAsync(filePath, originalBytes);
             ScanMedia(filePath);
+            return filePath;
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save screenshot: {ex.Message}");
+            return string.Empty;
         }
     }
     public async Task<Texture2D> LoadScreenShotAtLocal(string fileName)

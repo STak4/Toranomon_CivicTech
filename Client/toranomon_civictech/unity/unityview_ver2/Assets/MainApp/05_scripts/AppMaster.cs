@@ -94,7 +94,7 @@ public class AppMaster : MonoBehaviour
                 appConfig.GotTracking = false;
                 // ウェイトタイムを入れる(UI側でのARView起動待ち)
                 timeOut = 0;
-                maxWaitTime = 180.0f; // 最大待機時間180秒
+                maxWaitTime = 5.0f; // 最大待機時間5秒
                 while (timeOut < maxWaitTime)
                 {
                     await Task.Delay(100);
@@ -111,8 +111,8 @@ public class AppMaster : MonoBehaviour
                     return;
                 }
                 // マップデータ読込後の処理を入れる
-                // ■■■■　ここでデータを呼び出す？　■■■■　appConfig.LoadThread();
-                appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                // appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                appConfig.SetAppPhase(AppPhase.Searching);
                 break;
 
             case AppPhase.Mapping:
@@ -163,7 +163,8 @@ public class AppMaster : MonoBehaviour
                 }
                 await Task.Delay(1000); // UI側の通知表示時間
                 // マッピング終了後、処理を移行する
-                appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                // appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                appConfig.SetAppPhase(AppPhase.Searching);
                 break;
             /*
             case AppPhase.Mapped:

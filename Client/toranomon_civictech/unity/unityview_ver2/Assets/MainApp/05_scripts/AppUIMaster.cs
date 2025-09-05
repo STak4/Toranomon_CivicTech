@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR.ARFoundation;
+using System.IO;
+using System.Collections.Generic;
 
 public class AppUIMaster : MonoBehaviour
 {
@@ -11,6 +13,7 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private ARSession _arSession;
     [SerializeField] private ARCameraManager _arCameraManager;
     [SerializeField] private ARCameraBackground _arCameraBackground;
+    [SerializeField] private FlutterConnectManager _flutterConnectManager;
 
     [SerializeField] private MapperTCT _mapperTCT;
     [SerializeField] private TrackerTCT _trackerTCT;
@@ -58,8 +61,7 @@ public class AppUIMaster : MonoBehaviour
         ModeOnOff(true);
         StatusOnOff(true);
 
-        // ◆◆Flutter接続仕様◆◆
-        ARViewOnOff(true);
+        ARViewOnOff(false);
         InformationOnOff(false);
         RadarOnOff(false);
 
@@ -170,10 +172,10 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Standby:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
                 else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
                 if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
@@ -182,10 +184,10 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Radar:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
                 else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
                 _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
@@ -197,7 +199,7 @@ public class AppUIMaster : MonoBehaviour
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
 
-                _mappingButton.interactable = true;
+                _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
@@ -221,13 +223,13 @@ public class AppUIMaster : MonoBehaviour
                 */
 
             case AppPhase.StandbyTracking:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = false;
                 else _radarButton.interactable = false;
                 if (appConfig.IsArView) _trackingButton.interactable = true;
                 else _trackingButton.interactable = false;
 
-                _arViewButton.interactable = true;
-                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
+                _arViewButton.interactable = false;
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
@@ -235,7 +237,7 @@ public class AppUIMaster : MonoBehaviour
 
             case AppPhase.Searching:
                 _radarButton.interactable = false;
-                _trackingButton.interactable = true;
+                _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
 
                 _mappingButton.interactable = false;
@@ -244,13 +246,13 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.OnTracking:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = false;
                 else _radarButton.interactable = false;
-                if (appConfig.IsArView) _trackingButton.interactable = true;
+                if (appConfig.IsArView) _trackingButton.interactable = false;
                 else _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
-                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
                 if (!submitted) _photoShootButton.interactable = true;
                 else _photoShootButton.interactable = false;
@@ -261,6 +263,17 @@ public class AppUIMaster : MonoBehaviour
             default:
                 break;
         }
+        SwitchGameObjects();
+
+    }
+    private void SwitchGameObjects()
+    {
+        _radarButton.gameObject.SetActive(_radarButton.interactable);
+        _trackingButton.gameObject.SetActive(_trackingButton.interactable);
+        _arViewButton.gameObject.SetActive(_arViewButton.interactable);
+        _mappingButton.gameObject.SetActive(_mappingButton.interactable);
+        _photoShootButton.gameObject.SetActive(_photoShootButton.interactable);
+        _submitButton.gameObject.SetActive(_submitButton.interactable);
     }
     private async Task ViewActiveChange(AppPhase newPhase)
     {
@@ -287,7 +300,7 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please see around for mapping...");
-                while(appConfig.GetAppPhase() == AppPhase.Mapping && !appConfig.MadeMap)
+                while (appConfig.GetAppPhase() == AppPhase.Mapping && !appConfig.MadeMap)
                 {
                     await Task.Delay(500);
                     if (appConfig.GetAppPhase() != AppPhase.Mapping || appConfig.MadeMap) break;
@@ -335,7 +348,7 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please look around to search for a track...");
-                while(appConfig.GetAppPhase() == AppPhase.Searching && !appConfig.GotTracking)
+                while (appConfig.GetAppPhase() == AppPhase.Searching && !appConfig.GotTracking)
                 {
                     await Task.Delay(500);
                     if (appConfig.GetAppPhase() != AppPhase.Searching || appConfig.GotTracking) break;
@@ -363,7 +376,7 @@ public class AppUIMaster : MonoBehaviour
                 break;
             default:
                 break;
-        }                
+        }
     }
     private void ModeOnOff(bool active)
     {
@@ -449,9 +462,41 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
     private async Task RadarSearch()
     {
-        // 一瞬待ちを入れる（ネットロードなら不要、ローカルロードのため）
-        await Task.Yield();
-        _ = _trackerTCT.LoadMapFromLocal();
+        string uuid = "75d5414a-996e-4f0b-8ae8-2ccc818b0735";
+        string mapFolder = "maps";
+        string logFolder = "logs";
+        string ImageFolder = "images";
+
+        string mapFileName = $"{uuid}.dat";
+        string mapPath = Path.Combine(Application.persistentDataPath, mapFolder, mapFileName);
+        await _trackerTCT.LoadMapFromLocal(mapPath);
+
+        string logFileName = $"{uuid}.json";
+        string logPath = Path.Combine(Application.persistentDataPath, logFolder, logFileName);
+        Thread threadData = await NodeStoreModels.DeserializeThreadJsonFromFile(logPath);
+
+        List<string> imageFileNames = new List<string>();
+        string imageFolderPath = Path.Combine(Application.persistentDataPath, ImageFolder);
+        if (Directory.Exists(imageFolderPath))
+        {
+            var files = Directory.GetFiles(imageFolderPath, "*.jpg");
+            foreach (var file in files)
+            {
+                if (Path.GetFileName(file).Contains(uuid))
+                {
+                    imageFileNames.Add(Path.GetFileName(file));
+                }
+            }
+        }
+        if (!string.IsNullOrEmpty(threadData.Uuid))
+        {
+            appConfig.LoadThread(threadData);
+            appConfig.GotMap = true;
+        }
+        else
+        {
+            appConfig.GotMap = false;
+        }
     }
     private void MapLoadCompleteGot(bool success)
     {
@@ -479,8 +524,8 @@ public class AppUIMaster : MonoBehaviour
 
         if (appConfig.GetAppPhase() == AppPhase.Standby && willActivate)
         {
-            await RadarSearch();
             appConfig.SetAppPhase(AppPhase.Radar);
+            await RadarSearch();
         }
         else if (appConfig.GetAppPhase() == AppPhase.Radar && !willActivate)
         {
@@ -656,7 +701,7 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆撮影の本実行関数◆◆◆◆
 
     // デバッグ用にパブリック化、実装はprivateにする
-    public async Task PhotoShoot()
+    public async Task<string> PhotoShoot()
     {
         Texture2D screenshot = _screenCapture.TakeScreenshot();
         //Texture2D screenshot = await _screenCapture.LoadScreenShotAtLocal("sample001.jpg");
@@ -670,13 +715,15 @@ public class AppUIMaster : MonoBehaviour
 
         ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
         string uuid = appConfig.AddARLog(arLog);
-        await _screenCapture.SaveScreenShotAtLocal(screenshot, uuid);
+        string filePath = await _screenCapture.SaveScreenShotAtLocal(screenshot, uuid);
 
         _ = _shootEffect.PlayShootEffect();
 
         //空間にオブジェクトを生成
         bool isWorldPosition = false;
         _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+
+        return filePath;
     }
 
     public async Task TriggerPhotoShootButtonAction()
@@ -689,18 +736,22 @@ public class AppUIMaster : MonoBehaviour
         // AppPhase phase = appConfig.GetAppPhase();
         if (mode == AppMode.Proposal)
         {
-            await PhotoShoot();
+            string filePath = await PhotoShoot();
             appConfig.MadePhoto = true;
             // ボタンの状態を変更のために同フェーズで実行
             ButtonActiveChange(phase);
+            // Flutterへ撮影完了通知
+            _flutterConnectManager.SendPhotoShoot(filePath);
             Debug.Log("[AppUIMaster] MADE PHOTO!!");
         }
         else if (mode == AppMode.Reaction)
         {
-            await PhotoShoot();
+            string filePath = await PhotoShoot();
             appConfig.MadePhoto = true;
             // ボタンの状態を変更のために同フェーズで実行
             ButtonActiveChange(phase);
+            // Flutterへ撮影完了通知　■■■　恐らく今回の趣旨では下記動作は実行しない。　■■■
+            _flutterConnectManager.SendPhotoShoot(filePath);
             Debug.Log("[AppUIMaster] ADD PHOTO!!");
         }
         else
@@ -727,6 +778,7 @@ public class AppUIMaster : MonoBehaviour
             await Submit();
             appConfig.Submitted = true;
             ButtonActiveChange(phase);
+            // ■■■■ ここでデータを保存している／サーバーへの保存も検討 ■■■■
             await NodeStoreModels.SaveThread(appConfig.GetThread());
             Debug.Log("[AppUIMaster] PROPOSAL DONE!!");
         }

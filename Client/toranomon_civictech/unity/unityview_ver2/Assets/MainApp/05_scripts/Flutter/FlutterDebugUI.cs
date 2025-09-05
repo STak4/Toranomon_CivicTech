@@ -20,7 +20,7 @@ public class FlutterDebugUI : MonoBehaviour
     [SerializeField] private Button _viewButton = null!;
     [SerializeField] private Button _setLocationButton = null!;
 
-
+    [SerializeField] private Image _photoImage = null!;
     [SerializeField] private Button _recaptureButton = null!;
     [SerializeField] private Button _generatedButton = null!;
 
@@ -51,6 +51,13 @@ public class FlutterDebugUI : MonoBehaviour
         _voteButtonC.onClick.AddListener(() => VoteButton(2));
         _voteButtonD.onClick.AddListener(() => VoteButton(3));
         _voteButtonE.onClick.AddListener(() => VoteButton(4));
+    }
+    private void Start()
+    {
+        _startView.SetActive(true);
+        _blankView.SetActive(false);
+        _postView.SetActive(false);
+        _voteView.SetActive(false);
     }
     private void OnApplicationQuit()
     {
@@ -152,10 +159,14 @@ public class FlutterDebugUI : MonoBehaviour
 
             case FlutterMessageName.Quit:
                 _startView.SetActive(true);
+                _blankView.SetActive(false);
+                _postView.SetActive(false);
+                _voteView.SetActive(false);
                 break;
 
             case FlutterMessageName.Shoot:
                 pathData = message.Data?.Path ?? "";
+                await ViewPhoto(pathData);
                 _postView.SetActive(true);
                 break;
 
@@ -176,6 +187,37 @@ public class FlutterDebugUI : MonoBehaviour
             default:
                 break;
         }
+    }
+    private async Task ViewPhoto(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
+            return;
+        }
+        byte[] imageBytes;
+        try
+        {
+            imageBytes = System.IO.File.ReadAllBytes(path);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to read image file at {path}. Exception: {ex.Message}");
+            return;
+        }
+
+        Texture2D texture = new Texture2D(2, 2);
+        if (!texture.LoadImage(imageBytes))
+        {
+            Debug.LogError("[FlutterDebugUI] ViewPhoto: Failed to load image data into texture");
+            return;
+        }
+
+        // Create a sprite from the texture
+        Sprite photoSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        _photoImage.sprite = photoSprite;
+
+        await Task.Yield();
     }
 
 

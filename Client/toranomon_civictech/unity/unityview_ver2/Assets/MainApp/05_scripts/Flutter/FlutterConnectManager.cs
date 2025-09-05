@@ -39,8 +39,17 @@ public class FlutterConnectManager : MonoBehaviour
     {
         _ = SendFlutterCommand(FlutterMessageName.Awake);
     }
+    public void SendPhotoShoot(string path)
+    {
+        FlutterMessageData data = new FlutterMessageData
+        {
+            NameType = FlutterMessageName.Shoot,
+            Path = path
+        };
+        _ = SendFlutterCommand(FlutterMessageName.Shoot, data);
+    }
 
-    public async Task SendFlutterCommand(FlutterMessageName name, FlutterMessageData? data = null)
+    private async Task SendFlutterCommand(FlutterMessageName name, FlutterMessageData? data = null)
     {
         if (_isCommandProcessing)
         {
