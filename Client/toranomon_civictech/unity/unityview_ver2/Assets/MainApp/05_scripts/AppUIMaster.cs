@@ -501,6 +501,12 @@ public class AppUIMaster : MonoBehaviour
             }
             Debug.Log($"[AppUIMaster] Set uuid: {uuid} for this thread.");
         }
+        else
+        {
+            Debug.LogWarning("[AppUIMaster] Maps directory does not exist.");
+            appConfig.GotMap = false;
+            return;
+        }
 
         string mapFileName = $"{uuid}.dat";
         string logFileName = $"{uuid}.json";
@@ -853,41 +859,41 @@ public class AppUIMaster : MonoBehaviour
     public async Task Generated(string path, string reWritePath)
     {
         Debug.Log("[AppUIMaster] Generated start.");
-        if (string.IsNullOrEmpty(path))
-        {
-            Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
-            return;
-        }
         byte[] imageBytes;
-        try
+
+        if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(reWritePath))
         {
-            imageBytes = await File.ReadAllBytesAsync(path);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to read image file at {path}. Exception: {ex.Message}");
-            return;
-        }
-        try
-        {
-            if (!string.IsNullOrEmpty(reWritePath))
+            try
             {
+                imageBytes = await File.ReadAllBytesAsync(path);
                 await File.WriteAllBytesAsync(reWritePath, imageBytes);
                 await TriggerSubmitButtonAction();
             }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to read image file at {path}. Exception: {ex.Message}");
+                return;
+            }
+            Texture2D texture = new Texture2D(2, 2);
+            if (!texture.LoadImage(imageBytes))
+            {
+                Debug.LogError("[FlutterDebugUI] ViewPhoto: Failed to load image data into texture");
+                return;
+            }
+            _photoGenerator.UpdateTexture(texture);
         }
-        catch (Exception ex)
+        else if (!string.IsNullOrEmpty(reWritePath))
         {
-            Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to write image file at {reWritePath}. Exception: {ex.Message}");
+            Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
+            try
+            {
+                await TriggerSubmitButtonAction();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to write image file at {reWritePath}. Exception: {ex.Message}");
+            }
         }
-
-        Texture2D texture = new Texture2D(2, 2);
-        if (!texture.LoadImage(imageBytes))
-        {
-            Debug.LogError("[FlutterDebugUI] ViewPhoto: Failed to load image data into texture");
-            return;
-        }
-        _photoGenerator.UpdateTexture(texture);
     }
 
 
