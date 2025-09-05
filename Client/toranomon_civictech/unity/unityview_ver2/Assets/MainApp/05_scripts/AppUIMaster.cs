@@ -860,8 +860,10 @@ public class AppUIMaster : MonoBehaviour
     {
         Debug.Log("[AppUIMaster] Generated start.");
         byte[] imageBytes;
+        bool isPathExisting = File.Exists(path);
+        bool isRePathExisting = File.Exists(reWritePath);
 
-        if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(reWritePath))
+        if (isPathExisting && isRePathExisting)
         {
             try
             {
@@ -882,7 +884,7 @@ public class AppUIMaster : MonoBehaviour
             }
             _photoGenerator.UpdateTexture(texture);
         }
-        else if (!string.IsNullOrEmpty(reWritePath))
+        else if (isRePathExisting)
         {
             Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
             try
