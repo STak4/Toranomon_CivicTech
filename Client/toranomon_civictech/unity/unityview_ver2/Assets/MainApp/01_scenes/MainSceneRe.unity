@@ -1558,6 +1558,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: DebugRoot
       objectReference: {fileID: 0}
+    - target: {fileID: 8111200505555190357, guid: cac53e9d8800fcd4780dde13abbc30d1, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8998874831250559357, guid: cac53e9d8800fcd4780dde13abbc30d1, type: 3}
       propertyPath: _showHideA
       value: 
@@ -2417,6 +2421,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afa866ca4d6ef164db52f3f43c3a15f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _arSession: {fileID: 1927141904}
   _arCameraManager: {fileID: 1364898715}
   _arCameraBackground: {fileID: 1364898714}
   _mapperTCT: {fileID: 1972474195}
@@ -4354,7 +4359,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1927141902}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3859a92a05d4f5d418cb6ca605290e74, type: 3}
   m_Name: 

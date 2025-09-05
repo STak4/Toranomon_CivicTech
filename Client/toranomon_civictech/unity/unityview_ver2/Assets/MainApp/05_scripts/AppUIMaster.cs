@@ -8,6 +8,7 @@ public class AppUIMaster : MonoBehaviour
 {
     public AppConfig appConfig { get; set; } = new AppConfig();
 
+    [SerializeField] private ARSession _arSession;
     [SerializeField] private ARCameraManager _arCameraManager;
     [SerializeField] private ARCameraBackground _arCameraBackground;
 
@@ -48,6 +49,7 @@ public class AppUIMaster : MonoBehaviour
         // 明示的な初期化(関数だと不整合をおこす可能性を考慮)
         _arCameraBackground.enabled = false;
         _arCameraManager.enabled = false;
+        _arSession.enabled = true;
         _modeView.SetActive(false);
         _statusView.SetActive(false);
         _informationView.SetActive(false);
