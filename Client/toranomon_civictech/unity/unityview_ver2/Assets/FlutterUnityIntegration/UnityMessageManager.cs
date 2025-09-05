@@ -109,7 +109,7 @@ namespace FlutterUnityIntegration
 
         public void SendMessageToFlutter(string message)
         {
-            Debug.Log($"[UnityMessageManager] SendMessageToFlutter: send message: {message} ");
+            Debug.Log($"■UNITY■[UnityMessageManager] SendMessageToFlutter: send message: {message} ");
             OnSendMessageForDebug?.Invoke(message);
             NativeAPI.SendMessageToFlutter(message);
         }
@@ -134,7 +134,7 @@ namespace FlutterUnityIntegration
         // デバッグ用に用いる関数
         public void onMessageDebug(string message)
         {
-            Debug.Log($"■■F DEBUG■■[UnityMessageManager] onMessageDebug: receive message: {message} ");
+            Debug.Log($"■FLUTTER■[UnityMessageManager] onMessageDebug: receive message: {message} ");
             onMessage(message);
         }
         // メッセージ受領時に呼び出される関数

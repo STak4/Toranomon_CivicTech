@@ -44,7 +44,7 @@ public class FlutterConnectManager : MonoBehaviour
     {
         if (_isCommandProcessing)
         {
-            Debug.LogWarning("[<UNI>FlutterConnectManager] SendFlutterCommand: command is still processing, ignore new command");
+            Debug.LogWarning("◆UNITY◆[FlutterConnectManager] SendFlutterCommand: command is still processing, ignore new command");
             return;
         }
 
@@ -59,67 +59,67 @@ public class FlutterConnectManager : MonoBehaviour
         switch (name)
         {
             case FlutterMessageName.Unspecified:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Unspecified");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Unspecified");
                 break;
 
             // ◆下記はUnity起動時にFlutter側へ通知
             case FlutterMessageName.Awake:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Awake");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Awake");
                 SendMessageToFlutter(FlutterMessageName.Awake);
                 break;
 
             case FlutterMessageName.Capture:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Capture, it should be used from Flutter side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Capture, it should be used from Flutter side.");
                 break;
             case FlutterMessageName.View:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: View, it should be used from Flutter side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: View, it should be used from Flutter side.");
                 break;
             case FlutterMessageName.Quit:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Quit, it is used for debug quit phase checking.");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Quit, it is used for debug quit phase checking.");
                 DebugQuitFunction();
                 SendMessageToFlutter(FlutterMessageName.Quit);
                 break;
 
             // ◆下記はUnityからFlutterへ撮影したPathデータ送信
             case FlutterMessageName.Shoot:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Shoot");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Shoot");
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 SendMessageToFlutter(msg);
                 break;
 
             case FlutterMessageName.Recapture:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Recapture, it should be used from Flutter side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Recapture, it should be used from Flutter side.");
                 break;
             case FlutterMessageName.Generated:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Generated, it should be used from Flutter side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Generated, it should be used from Flutter side.");
                 break;
 
             // ◆下記は閲覧や撮影モードからFlutterへ戻ることの依頼
             case FlutterMessageName.Back:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Back");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Back");
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 SendMessageToFlutter(msg);
                 break;
             // ◆下記はUnityからFlutterへVote画面表示依頼
             case FlutterMessageName.Openvote:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Openvote");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Openvote");
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 SendMessageToFlutter(msg);
                 break;
 
             case FlutterMessageName.Vote:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Vote, it should be used from Flutter side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Vote, it should be used from Flutter side.");
                 break;
 
             // ◆下記は位置情報送信（未開発／必要に応じて対応）
             case FlutterMessageName.Setlocation:
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 SendMessageToFlutter(msg);
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Setlocation");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Setlocation");
                 break;
 
             default:
-                Debug.LogWarning($"[<UNI>FlutterConnectManager] FlutterCommand: Unhandled command {name}");
+                Debug.LogWarning($"◆UNITY◆[FlutterConnectManager] FlutterCommand: Unhandled command {name}");
                 break;
         }
         await Task.Delay(100);  // 少し待つ
@@ -130,7 +130,7 @@ public class FlutterConnectManager : MonoBehaviour
     {
         if (_isCommandProcessing)
         {
-            Debug.LogWarning("[<UNI>FlutterConnectManager] ReceiveFlutterCommand: command is still processing, ignore new command");
+            Debug.LogWarning("◆UNITY◆[FlutterConnectManager] ReceiveFlutterCommand: command is still processing, ignore new command");
             return;
         }
         _isCommandProcessing = true;
@@ -139,71 +139,71 @@ public class FlutterConnectManager : MonoBehaviour
         switch (name)
         {
             case FlutterMessageName.Unspecified:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Unspecified");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Unspecified");
                 break;
 
             case FlutterMessageName.Awake:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Awake, it is used for debug awake phase checking.");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Awake, it is used for debug awake phase checking.");
                 await Task.Delay(1000);
                 SendMessageToFlutter(FlutterMessageName.Awake);
                 break;
 
             // ◆下記がメイントリガー１
             case FlutterMessageName.Capture:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Capture");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Capture");
                 await _appUIMaster.TriggerMappingButtonAction();
                 break;
             // ◆下記がメイントリガー２
             case FlutterMessageName.View:
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: View");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: View");
                 await _appUIMaster.TriggerRadarButtonAction();
                 break;
 
             case FlutterMessageName.Quit:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Quit, it should be used from Unity side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Quit, it should be used from Unity side.");
                 break;
 
             case FlutterMessageName.Shoot:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Shoot, it should be used from Unity side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Shoot, it should be used from Unity side.");
                 break;
 
             // ◆下記は中途動作
             case FlutterMessageName.Recapture:
                 // ◆◆◆◆必要時応じて関数実行◆◆◆◆
                 await BlankTask();
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Recapture");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Recapture");
                 break;
 
             // ◆下記はPathデータ受領の上で保存実行（未開発）
             case FlutterMessageName.Generated:
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 await BlankTask();
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Generated");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Generated");
                 break;
 
             case FlutterMessageName.Back:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Back, it should be used from Unity side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Back, it should be used from Unity side.");
                 break;
             case FlutterMessageName.Openvote:
-                Debug.LogWarning("[<UNI>FlutterConnectManager] FlutterCommand: Openvote, it should be used from Unity side.");
+                Debug.LogWarning("◆UNITY◆[FlutterConnectManager] FlutterCommand: Openvote, it should be used from Unity side.");
                 break;
 
             // ◆下記はFlutterからのVote結果受領
             case FlutterMessageName.Vote:
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 await BlankTask();
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Vote");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Vote");
                 break;
 
             // ◆下記は位置情報受信（未開発／必要に応じて対応）
             case FlutterMessageName.Setlocation:
                 // ◆◆◆◆関数実行開発◆◆◆◆
                 await BlankTask();
-                Debug.Log("[<UNI>FlutterConnectManager] FlutterCommand: Setlocation");
+                Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Setlocation");
                 break;
 
             default:
-                Debug.LogWarning($"[<UNI>FlutterConnectManager] FlutterCommand: Unhandled command {name}");
+                Debug.LogWarning($"◆UNITY◆[FlutterConnectManager] FlutterCommand: Unhandled command {name}");
                 break;
         }
         _isCommandProcessing = false;
@@ -236,7 +236,7 @@ public class FlutterConnectManager : MonoBehaviour
         FlutterMessage? msg = JsonConvert.DeserializeObject<FlutterMessage>(message);
         if (msg == null)
         {
-            Debug.LogWarning("[<UNI>FlutterConnectManager] ReceiveMessageFromFlutter: message is null");
+            Debug.LogWarning("◆UNITY◆[FlutterConnectManager] ReceiveMessageFromFlutter: message is null");
             return;
         }
         _ = ReceiveFlutterCommand(msg);
