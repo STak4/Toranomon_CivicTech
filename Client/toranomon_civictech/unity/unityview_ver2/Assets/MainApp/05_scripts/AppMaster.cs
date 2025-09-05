@@ -7,6 +7,7 @@ public class AppMaster : MonoBehaviour
 {
     private AppConfig appConfig;
     [SerializeField] private AppUIMaster _appUIMaster;
+    [SerializeField] private FlutterConnectManager _flutterConnectManager;
     [SerializeField] private DebugSystem _debugSystem;
     [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
 
@@ -16,13 +17,18 @@ public class AppMaster : MonoBehaviour
     {
         appConfig = new AppConfig();
         _appUIMaster.appConfig = appConfig;
+        _flutterConnectManager.appConfig = appConfig;
     }
     private void Start()
     {
         Initialize();
         _appUIMaster.Initialize();
+        _flutterConnectManager.Initialize();
+
         appConfig.SetAppMode(AppMode.Unspecified);
         appConfig.SetAppPhase(AppPhase.Initialization);
+
+        _flutterConnectManager.SendAwake();
     }
     private void Initialize()
     {
@@ -45,6 +51,7 @@ public class AppMaster : MonoBehaviour
     {
         Dispose();
         _appUIMaster.Dispose();
+        _flutterConnectManager.Dispose();
     }
     private void Dispose()
     {
@@ -52,8 +59,8 @@ public class AppMaster : MonoBehaviour
             => await PhaseControlHandler(oldPhase, newPhase);
     }
 
-    // 基本仕様は、AppUIMaster等でボタン同時のフェーズ切り替えと各種動作を実行
-    // AppMasterでは状態管理をし、動作完了後のフェーズ移動とタイムアウトを実施する
+    // ◆◆◆◆　基本仕様は、AppUIMaster等でボタン同時のフェーズ切り替えと各種動作を実行　◆◆◆◆
+    // ◆◆◆◆　AppMasterでは状態管理をし、動作完了後のフェーズ移動とタイムアウトを実施する　◆◆◆◆
     private async Task PhaseControlHandler(AppPhase oldPhase, AppPhase newPhase)
     {
         float timeOut = 0;

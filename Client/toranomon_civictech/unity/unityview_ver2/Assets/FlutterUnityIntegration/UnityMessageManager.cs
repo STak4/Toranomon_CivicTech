@@ -73,6 +73,7 @@ namespace FlutterUnityIntegration
 
         public delegate void MessageDelegate(string message);
         public event MessageDelegate OnMessage;
+        public event Action<string> OnSendMessageForDebug;
 
         public delegate void MessageHandlerDelegate(MessageHandler handler);
         public event MessageHandlerDelegate OnFlutterMessage;
@@ -106,9 +107,10 @@ namespace FlutterUnityIntegration
             NativeAPI.QuitUnityWindow();
         }
 
-
         public void SendMessageToFlutter(string message)
         {
+            Debug.Log($"[UnityMessageManager] SendMessageToFlutter: send message: {message} ");
+            OnSendMessageForDebug?.Invoke(message);
             NativeAPI.SendMessageToFlutter(message);
         }
 
@@ -129,7 +131,13 @@ namespace FlutterUnityIntegration
             });
             UnityMessageManager.Instance.SendMessageToFlutter(MessagePrefix + o.ToString());
         }
-
+        // デバッグ用に用いる関数
+        public void onMessageDebug(string message)
+        {
+            Debug.Log($"■■F DEBUG■■[UnityMessageManager] onMessageDebug: receive message: {message} ");
+            onMessage(message);
+        }
+        // メッセージ受領時に呼び出される関数
         void onMessage(string message)
         {
             OnMessage?.Invoke(message);

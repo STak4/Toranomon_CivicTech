@@ -27,12 +27,12 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private TMP_Text _informationText;
     [SerializeField] private GameObject _radarView;
 
-    [SerializeField] private Button _radarButton;
-    [SerializeField] private Button _trackingButton;
-    [SerializeField] private Button _arViewButton;
-    [SerializeField] private Button _mappingButton;
-    [SerializeField] private Button _photoShootButton;
-    [SerializeField] private Button _submitButton;
+    [SerializeField] public Button _radarButton;
+    [SerializeField] public Button _trackingButton;
+    [SerializeField] public Button _arViewButton;
+    [SerializeField] public Button _mappingButton;
+    [SerializeField] public Button _photoShootButton;
+    [SerializeField] public Button _submitButton;
 
     [SerializeField] private GameObject _photoObject;
 
@@ -58,7 +58,8 @@ public class AppUIMaster : MonoBehaviour
         ModeOnOff(true);
         StatusOnOff(true);
 
-        ARViewOnOff(false);
+        // ◆◆Flutter接続仕様◆◆
+        ARViewOnOff(true);
         InformationOnOff(false);
         RadarOnOff(false);
 
@@ -466,8 +467,11 @@ public class AppUIMaster : MonoBehaviour
         }
     }
 
-    private async Task TriggerRadarButtonAction()
+    public async Task TriggerRadarButtonAction()
     {
+        bool radarButtonActive = _radarButton.enabled;
+        if (!radarButtonActive) return;
+
         bool isActive = _radarView.activeSelf;
         RadarOnOff(!isActive);
         bool willActivate = !isActive;
@@ -485,6 +489,9 @@ public class AppUIMaster : MonoBehaviour
     }
     private void TriggerARViewButtonAction()
     {
+        bool arViewButtonActive = _arViewButton.enabled;
+        if (!arViewButtonActive) return;
+
         bool isManagerActive = _arCameraManager.enabled;
         bool isBackgroundActive = _arCameraBackground.enabled;
         bool isActive = isManagerActive && isBackgroundActive;
@@ -603,8 +610,11 @@ public class AppUIMaster : MonoBehaviour
     }
 
 
-    private async Task TriggerTrackingButtonAction()
+    public async Task TriggerTrackingButtonAction()
     {
+        bool trackingButtonActive = _trackingButton.enabled;
+        if (!trackingButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Searching)
         {
@@ -620,8 +630,11 @@ public class AppUIMaster : MonoBehaviour
             Debug.Log("[AppUIMaster] Tracking task stopped.");
         }
     }
-    private async Task TriggerMappingButtonAction()
+    public async Task TriggerMappingButtonAction()
     {
+        bool mappingButtonActive = _mappingButton.enabled;
+        if (!mappingButtonActive) return;
+
         Debug.Log("[AppUIMaster] Mapping button pressed.");
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Mapping)
@@ -666,8 +679,11 @@ public class AppUIMaster : MonoBehaviour
         _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
     }
 
-    private async Task TriggerPhotoShootButtonAction()
+    public async Task TriggerPhotoShootButtonAction()
     {
+        bool photoShootButtonActive = _photoShootButton.enabled;
+        if (!photoShootButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         AppMode mode = appConfig.GetAppMode();
         // AppPhase phase = appConfig.GetAppPhase();
@@ -701,6 +717,9 @@ public class AppUIMaster : MonoBehaviour
 
     private async Task TriggerSubmitButtonAction()
     {
+        bool submitButtonActive = _submitButton.enabled;
+        if (!submitButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         AppMode mode = appConfig.GetAppMode();
         if (mode == AppMode.Proposal)

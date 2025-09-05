@@ -129,7 +129,7 @@ public class DebugSystem : MonoBehaviour
         logHistory.Add(condition);
 
         // 最大5つまで表示
-        if (logHistory.Count > 3)
+        if (logHistory.Count > 5)
         {
             logHistory.RemoveAt(0); // 古いログを削除
         }
