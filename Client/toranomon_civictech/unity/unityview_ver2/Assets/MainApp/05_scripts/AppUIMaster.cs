@@ -499,7 +499,7 @@ public class AppUIMaster : MonoBehaviour
                 appConfig.GotMap = false;
                 return;
             }
-            Debug.Log($"[AppUIMaster] Found {files.Length} maps for this thread.");
+            Debug.Log($"[AppUIMaster] Set uuid: {uuid} for this thread.");
         }
 
         string mapFileName = $"{uuid}.dat";
@@ -507,7 +507,6 @@ public class AppUIMaster : MonoBehaviour
 
         string mapPath = Path.Combine(mapFolderPath, mapFileName);
         await _trackerTCT.LoadMapFromLocal(mapPath);
-        Debug.Log("[AppUIMaster] Map load triggered.");
 
         string logFolderPath = Path.Combine(folderPath, logFolder);
         string logPath = Path.Combine(logFolderPath, logFileName);
@@ -525,7 +524,6 @@ public class AppUIMaster : MonoBehaviour
                     imageFileNames.Add(Path.GetFileName(file));
                 }
             }
-            Debug.Log($"[AppUIMaster] Found {imageFileNames.Count} images for this thread.");
         }
         if (!string.IsNullOrEmpty(threadData.Uuid))
         {

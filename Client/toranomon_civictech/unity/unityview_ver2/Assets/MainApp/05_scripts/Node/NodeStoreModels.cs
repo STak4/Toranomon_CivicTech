@@ -26,7 +26,7 @@ public class NodeStoreModels
 
     public static async Task SaveThread(Thread thread)
     {
-        string folderPath = Path.Combine(Application.persistentDataPath);
+        string folderPath = Application.persistentDataPath;
 
         ResourceUrls resources = new ResourceUrls();
         string threadUuid = thread.Uuid;
