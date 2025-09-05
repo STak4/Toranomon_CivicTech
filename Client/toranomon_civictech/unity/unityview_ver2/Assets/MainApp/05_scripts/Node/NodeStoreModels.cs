@@ -26,14 +26,8 @@ public class NodeStoreModels
 
     public static async Task SaveThread(Thread thread)
     {
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath);
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath);
-#endif
+        string folderPath = Path.Combine(Application.persistentDataPath);
+
         ResourceUrls resources = new ResourceUrls();
         string threadUuid = thread.Uuid;
         int arLogCount = thread.ARLogSet.ARLogs.Count;

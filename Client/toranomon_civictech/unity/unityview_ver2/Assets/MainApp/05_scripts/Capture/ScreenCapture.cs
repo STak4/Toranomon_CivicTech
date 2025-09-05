@@ -89,15 +89,8 @@ public class ScreenCaptureManager : MonoBehaviour
     public async Task<string> SaveScreenShotAtLocal(Texture2D scrSht, string uuidWithIndex)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-#endif
+        string folderPath = Path.Combine(Application.persistentDataPath, "images");
+
         string filePath = Path.Combine(folderPath, $"{uuidWithIndex}.jpg");
         if (!Directory.Exists(folderPath))
         {
@@ -133,14 +126,7 @@ public class ScreenCaptureManager : MonoBehaviour
     }
     public async Task<Texture2D> LoadScreenShotAtLocal(string fileName)
     {
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-#endif
+        string folderPath = Path.Combine(Application.persistentDataPath, "images");
         string filePath = Path.Combine(folderPath, fileName);
         if (!File.Exists(filePath))
         {

@@ -468,22 +468,43 @@ public class AppUIMaster : MonoBehaviour
     private async Task RadarSearch()
     {
         Debug.Log("[AppUIMaster] RadarSearch start.");
-        string uuid = "75d5414a-996e-4f0b-8ae8-2ccc818b0735";
         string mapFolder = "maps";
-        string mapFileName = $"{uuid}.dat";
         string logFolder = "logs";
-        string logFileName = $"{uuid}.json";
         string imageFolder = "images";
-        string folderPath = "";
-#if UNITY_ANDROID
-        folderPath = Application.persistentDataPath;
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents");
-#else
-        folderPath = Application.persistentDataPath;
-#endif
+        string folderPath = Application.persistentDataPath;
+        string uuid = "";
 
         string mapFolderPath = Path.Combine(folderPath, mapFolder);
+        if (Directory.Exists(mapFolderPath))
+        {
+            string[] files = Directory.GetFiles(mapFolderPath, "*.dat");
+            if (files.Length > 0)
+            {
+                string latestFile = "";
+                DateTime latestTime = DateTime.MinValue;
+                foreach (var file in files)
+                {
+                    DateTime fileTime = File.GetLastWriteTime(file);
+                    if (fileTime > latestTime)
+                    {
+                        latestTime = fileTime;
+                        latestFile = file;
+                    }
+                }
+                uuid = Path.GetFileNameWithoutExtension(latestFile);
+            }
+            else
+            {
+                Debug.LogWarning("[AppUIMaster] No map files found in the maps directory.");
+                appConfig.GotMap = false;
+                return;
+            }
+            Debug.Log($"[AppUIMaster] Found {files.Length} maps for this thread.");
+        }
+
+        string mapFileName = $"{uuid}.dat";
+        string logFileName = $"{uuid}.json";
+
         string mapPath = Path.Combine(mapFolderPath, mapFileName);
         await _trackerTCT.LoadMapFromLocal(mapPath);
         Debug.Log("[AppUIMaster] Map load triggered.");
@@ -787,8 +808,8 @@ public class AppUIMaster : MonoBehaviour
 
     private async Task TriggerSubmitButtonAction()
     {
-        bool submitButtonActive = _submitButton.enabled;
-        if (!submitButtonActive) return;
+        // bool submitButtonActive = _submitButton.enabled;
+        // if (!submitButtonActive) return;
 
         AppPhase phase = appConfig.GetAppPhase();
         AppMode mode = appConfig.GetAppMode();
@@ -854,6 +875,7 @@ public class AppUIMaster : MonoBehaviour
             if (!string.IsNullOrEmpty(reWritePath))
             {
                 await File.WriteAllBytesAsync(reWritePath, imageBytes);
+                await TriggerSubmitButtonAction();
             }
         }
         catch (Exception ex)
