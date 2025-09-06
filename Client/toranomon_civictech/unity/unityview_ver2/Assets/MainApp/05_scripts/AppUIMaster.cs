@@ -43,8 +43,8 @@ public class AppUIMaster : MonoBehaviour
 
     [SerializeField] private List<GraphicRaycaster> _graphicRaycasters = null!;
 
-    private GameObject _generatedPhotoObject;
-    private string _generatedPhotoId;
+    private List<GameObject> _generatedPhotoObject = new List<GameObject>();
+    private List<string> _generatedPhotoId = new List<string>();
 
     public void Initialize()
     {
@@ -478,81 +478,124 @@ public class AppUIMaster : MonoBehaviour
 
 
     // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
-    private async Task RadarSearch()
+    private async Task RadarSearch(bool local = true)
     {
-        Debug.Log("[AppUIMaster] RadarSearch start.");
-        string mapFolder = "maps";
-        string logFolder = "logs";
-        string imageFolder = "images";
-        string folderPath = Application.persistentDataPath;
-        string uuid = "";
-
-        string mapFolderPath = Path.Combine(folderPath, mapFolder);
-        if (Directory.Exists(mapFolderPath))
+        if (local)
         {
-            string[] files = Directory.GetFiles(mapFolderPath, "*.dat");
-            if (files.Length > 0)
+            string folderPath = Application.persistentDataPath;
+            string logFolder = "logs";
+            string logFolderPath = Path.Combine(folderPath, logFolder);
+            string uuid = "";
+            Thread threadData = new Thread();
+
+            // ログデータの読み込み
+            if (Directory.Exists(logFolderPath))
             {
-                string latestFile = "";
-                DateTime latestTime = DateTime.MinValue;
-                foreach (var file in files)
+                string[] files = Directory.GetFiles(logFolderPath, "*.json");
+                if (files.Length > 0)
                 {
-                    DateTime fileTime = File.GetLastWriteTime(file);
-                    if (fileTime > latestTime)
+                    string latestFile = "";
+                    DateTime latestTime = DateTime.MinValue;
+                    foreach (var file in files)
                     {
-                        latestTime = fileTime;
-                        latestFile = file;
+                        DateTime fileTime = File.GetLastWriteTime(file);
+                        if (fileTime > latestTime)
+                        {
+                            latestTime = fileTime;
+                            latestFile = file;
+                        }
+                    }
+                    uuid = Path.GetFileNameWithoutExtension(latestFile);
+                    Debug.Log($"[AppUIMaster] Set uuid: {uuid} for this thread.");
+                    threadData = await NodeStoreModels.DeserializeThreadJsonFromFile(latestFile);
+                    if (threadData != null && threadData.ARLogSet.ARLogs.Count > 0)
+                    {
+                        Debug.Log($"[AppUIMaster] Loaded log data with {threadData.ARLogSet.ARLogs.Count} ARLogs.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[AppUIMaster] No log data found or log data is empty.");
+                        appConfig.GotMap = false;
+                        return;
                     }
                 }
-                uuid = Path.GetFileNameWithoutExtension(latestFile);
+                else
+                {
+                    Debug.LogWarning("[AppUIMaster] No log files found in the logs directory.");
+                    appConfig.GotMap = false;
+                    return;
+                }
             }
             else
             {
-                Debug.LogWarning("[AppUIMaster] No map files found in the maps directory.");
+                Debug.LogWarning("[AppUIMaster] Logs directory does not exist.");
                 appConfig.GotMap = false;
                 return;
             }
-            Debug.Log($"[AppUIMaster] Set uuid: {uuid} for this thread.");
-        }
-        else
-        {
-            Debug.LogWarning("[AppUIMaster] Maps directory does not exist.");
-            appConfig.GotMap = false;
-            return;
-        }
 
-        string mapFileName = $"{uuid}.dat";
-        string logFileName = $"{uuid}.json";
-
-        string mapPath = Path.Combine(mapFolderPath, mapFileName);
-        await _trackerTCT.LoadMapFromLocal(mapPath);
-
-        string logFolderPath = Path.Combine(folderPath, logFolder);
-        string logPath = Path.Combine(logFolderPath, logFileName);
-        Thread threadData = await NodeStoreModels.DeserializeThreadJsonFromFile(logPath);
-
-        List<string> imageFileNames = new List<string>();
-        string imageFolderPath = Path.Combine(folderPath, imageFolder);
-        if (Directory.Exists(imageFolderPath))
-        {
-            var files = Directory.GetFiles(imageFolderPath, "*.jpg");
-            foreach (var file in files)
+            // マップデータの読み込み (ロードはローカルな点を考慮)
+            string mapFilePath = threadData.Resources.MapUrl;
+            if (mapFilePath == string.Empty)
             {
-                if (Path.GetFileName(file).Contains(uuid))
+                Debug.LogError("[AppUIMaster] Map file path is empty.");
+                appConfig.GotMap = false;
+                return;
+            }
+            else if (File.Exists(mapFilePath))
+            {
+                byte[] serializedDeviceMap = await File.ReadAllBytesAsync(mapFilePath);
+                threadData.Map = serializedDeviceMap;
+                await _trackerTCT.LoadMapFromLocal(serializedDeviceMap);
+                Debug.Log("[AppUIMaster] Map file loaded successfully.");
+            }
+            else
+            {
+                Debug.LogWarning($"[AppUIMaster] Maps directory does not exist at {mapFilePath}.");
+                appConfig.GotMap = false;
+                return;
+            }
+
+            // イメージデータの読み込み
+            List<string> imageFilePaths = threadData.Resources.ImageUrls;
+            if (imageFilePaths.Count == 0)
+            {
+                Debug.LogWarning("[AppUIMaster] No image file paths found in the thread resources.");
+            }
+            foreach (var path in imageFilePaths)
+            {
+                if (File.Exists(path))
                 {
-                    imageFileNames.Add(Path.GetFileName(file));
+                    string logUuid = Path.GetFileNameWithoutExtension(path);
+                    foreach (var log in threadData.ARLogSet.ARLogs)
+                    {
+                        if (log.Uuid == logUuid)
+                        {
+                            log.Image = await File.ReadAllBytesAsync(path);
+                            Debug.Log($"[AppUIMaster] Loaded image for ARLog successfully. UUID: {log.Uuid}");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[AppUIMaster] Image file does not exist at {path}.");
                 }
             }
-        }
-        if (!string.IsNullOrEmpty(threadData.Uuid))
-        {
+
+            // AppConfigにデータを代入
             appConfig.LoadThread(threadData);
             appConfig.GotMap = true;
+
+            // 写真オブジェクトの生成
+            await LoadPhotoModels();
         }
         else
         {
-            appConfig.GotMap = false;
+            Debug.LogError("[AppUIMaster] RadarSearch with non-local source is not implemented.");
         }
+
+        // データロード後にオブジェクト配置処理
+        
     }
     private void MapLoadCompleteGot(bool success)
     {
@@ -568,6 +611,40 @@ public class AppUIMaster : MonoBehaviour
         }
     }
 
+    private async Task LoadPhotoModels()
+    {
+        if (appConfig.GetAppMode() == AppMode.Reaction && appConfig.GotMap)
+        {
+            List<ARLogUnit> arLogs = appConfig.GetThread().ARLogSet.ARLogs;
+            foreach (var log in arLogs)
+            {
+                if (log.Image != null && log.Image.Length > 0)
+                {
+                    Texture2D texture = new Texture2D(2, 2);
+                    if (texture.LoadImage(log.Image))
+                    {
+                        bool isWorldPosition = false;
+                        // ■■■■　ログ出しが複数に対して追っかけるのが１つのオブジェクトのみ！！！　■■■■
+                        _generatedPhotoObject.Add(_photoGenerator.GeneratePhotoObject(log, texture, isWorldPosition));
+                        _generatedPhotoId.Add(log.Uuid);
+                        Debug.Log($"[AppUIMaster] Generated photo object for ARLog UUID: {log.Uuid}");
+                        await Task.Yield();
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[AppUIMaster] Failed to load image data into texture for ARLog UUID: {log.Uuid}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[AppUIMaster] No image data found for ARLog UUID: {log.Uuid}");
+                }
+            }
+        }
+        await Task.Yield();
+
+    }
+
     public async Task TriggerRadarButtonAction()
     {
         // bool radarButtonActive = _radarButton.enabled;
@@ -581,7 +658,7 @@ public class AppUIMaster : MonoBehaviour
         if (appConfig.GetAppPhase() == AppPhase.Standby)
         {
             appConfig.SetAppPhase(AppPhase.Radar);
-            await RadarSearch();
+            await RadarSearch(true);
         }
         else if (appConfig.GetAppPhase() == AppPhase.Radar)
         {
@@ -777,8 +854,8 @@ public class AppUIMaster : MonoBehaviour
 
         //空間にオブジェクトを生成
         bool isWorldPosition = false;
-        _generatedPhotoObject = _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
-        _generatedPhotoId = uuidWithIndex;
+        _generatedPhotoObject.Add(_photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition));
+        _generatedPhotoId.Add(uuidWithIndex);
 
         return filePath;
     }
@@ -859,10 +936,19 @@ public class AppUIMaster : MonoBehaviour
         await _screenCapture.ClearScreenshotAtLocal(reWritePath);
         if (_generatedPhotoObject != null)
         {
-            Destroy(_generatedPhotoObject);
-            _generatedPhotoObject = null;
+            foreach (var obj in _generatedPhotoObject)
+            {
+                Destroy(obj);
+            }
+            _generatedPhotoObject.Clear();
+            _generatedPhotoObject = new List<GameObject>();
         }
-        appConfig.RemoveARLog(_generatedPhotoId);
+        foreach (var id in _generatedPhotoId)
+        {
+            appConfig.RemoveARLog(id);
+        }
+        _generatedPhotoId.Clear();
+        _generatedPhotoId = new List<string>();
         appConfig.MadePhoto = false;
         AppPhase phase = appConfig.GetAppPhase();
         ButtonActiveChange(phase);
