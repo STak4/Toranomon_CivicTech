@@ -6,6 +6,7 @@ using UnityEngine;
 using Newtonsoft.Json;
 using FlutterUnityIntegration;
 using UnityEngine.UI;
+using System.IO;
 
 public class FlutterDebugUI : MonoBehaviour
 {
@@ -33,7 +34,8 @@ public class FlutterDebugUI : MonoBehaviour
 
     bool gotAwake = false;
     string pathData = "";
-    string submitPathData = "C:\\Users\\ryo_0\\AppData\\LocalLow\\ToranomonCivicTech\\TCT007\\DSC_5812.JPG";
+    string submitPathData = Application.streamingAssetsPath;
+    string submitImageData = "generatedSample.jpg";
     double latitude = 35.666924;
     double longitude = 139.747533;
     private void Awake()
@@ -45,6 +47,7 @@ public class FlutterDebugUI : MonoBehaviour
         _setLocationButton.onClick.AddListener(() => SetLocationButton(latitude, longitude));
 
         _recaptureButton.onClick.AddListener(() => RecaptureButton());
+        submitPathData = Path.Combine(submitPathData, submitImageData);
         _generatedButton.onClick.AddListener(() => GeneratedButton(submitPathData));
 
         _voteButtonA.onClick.AddListener(() => VoteButton(0));
@@ -59,6 +62,7 @@ public class FlutterDebugUI : MonoBehaviour
         _blankView.SetActive(false);
         _postView.SetActive(false);
         _voteView.SetActive(false);
+
     }
     private void OnApplicationQuit()
     {

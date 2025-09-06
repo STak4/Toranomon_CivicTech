@@ -51,6 +51,10 @@ public class FlutterConnectManager : MonoBehaviour
         };
         _ = SendFlutterCommand(FlutterMessageName.Shoot, data);
     }
+    public void SendPhotoSelect()
+    {
+        _ = SendFlutterCommand(FlutterMessageName.Openvote);
+    }
 
     private async Task SendFlutterCommand(FlutterMessageName name, FlutterMessageData? data = null)
     {
@@ -202,8 +206,8 @@ public class FlutterConnectManager : MonoBehaviour
 
             // ◆下記はFlutterからのVote結果受領
             case FlutterMessageName.Vote:
-                // ◆◆◆◆関数実行開発◆◆◆◆
-                await BlankTask();
+                int voteRate = (int)(message.Data?.Rate ?? -1);
+                await _appUIMaster.VoteParticles(voteRate);
                 Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Vote");
                 break;
 

@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine.XR.ARFoundation;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;
 
 public class AppUIMaster : MonoBehaviour
 {
@@ -40,6 +41,8 @@ public class AppUIMaster : MonoBehaviour
 
     [SerializeField] private GameObject _photoObject;
 
+    [SerializeField] private List<GraphicRaycaster> _graphicRaycasters = null!;
+
     private GameObject _generatedPhotoObject;
     private string _generatedPhotoId;
 
@@ -68,6 +71,11 @@ public class AppUIMaster : MonoBehaviour
         ARViewOnOff(false);
         InformationOnOff(false);
         RadarOnOff(false);
+
+        CameraManager.CameraRayAction += (pressVec, origin, direction) =>
+        {
+            CameraRaySelect(pressVec, origin, direction);
+        };
 
         appConfig.PhaseChangeAction += async (oldPhase, newPhase) =>
         {
@@ -99,6 +107,11 @@ public class AppUIMaster : MonoBehaviour
 
     public void Dispose()
     {
+        CameraManager.CameraRayAction -= (pressVec, origin, direction) =>
+        {
+            CameraRaySelect(pressVec, origin, direction);
+        };
+
         appConfig.PhaseChangeAction -= async (oldPhase, newPhase) =>
         {
             StatusChange(newPhase);
@@ -886,7 +899,7 @@ public class AppUIMaster : MonoBehaviour
         }
         else if (isRePathExisting)
         {
-            Debug.LogWarning("[FlutterDebugUI] ViewPhoto: pathData is null or empty");
+            Debug.LogWarning($"[FlutterDebugUI] ViewPhoto: pathData is null or empty Path:{path}");
             try
             {
                 await TriggerSubmitButtonAction();
@@ -895,6 +908,115 @@ public class AppUIMaster : MonoBehaviour
             {
                 Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to write image file at {reWritePath}. Exception: {ex.Message}");
             }
+        }
+    }
+
+
+    // ◆◆◆◆Rayの関数◆◆◆◆
+
+    //■■■■　乱雑なので混乱を招く可能性あり　■■■■
+    private VoteController _voteController = null;
+    // ボタンセレクト以外の挙動 ： 3Dオブジェクトセレクト時
+    private void CameraRaySelect(Vector2 pressVec, Vector3 origin, Vector3 direction)
+    {
+        //Log.Write($"Press vector: {pressVec}, Camera Ray Origin: {origin}, Direction: {direction}");
+        // Log.Write($"[AppMaster] CameraRaySelect called with pressVec: {pressVec}, origin: {origin}, direction: {direction}");
+
+        var eventData = new PointerEventData(EventSystem.current) { position = pressVec };
+        bool isUIHit = false;
+        bool is3DHit = false;
+        foreach (var raycaster in _graphicRaycasters)
+        {
+            var results = new List<RaycastResult>();
+            raycaster.Raycast(eventData, results);
+            if (results.Count > 0) { isUIHit = true; break; }
+            // Log.Write($"[AppMaster] Raycaster checked, results count: {results.Count}");
+        }
+        if (isUIHit)
+        {
+            // Log.Write($"[AppMaster] UI Hit");
+            return;
+        }
+        // Log.Write($"[AppMaster] No UI Hit");
+
+        // 3Dオブジェクトセレクト分岐処理
+        Ray ray = new Ray(origin, direction);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit))
+        {
+            is3DHit = true;
+        }
+        if (!is3DHit)
+        {
+            // 3Dオブジェクト非セレクト時の処理
+            return;
+        }
+
+        // 3Dオブジェクトがヒットした場合の処理
+        if (is3DHit)
+        {
+            // Debug.Log($"3D Object Hit: {hit.collider.name}");
+            var hitTransform = hit.collider.transform;
+            if (hitTransform == null) return;
+            string nodeName = hitTransform.name;
+            // Debug.Log($"3D Object Hit: {nodeName}");
+
+            // ある場合にUI表示を実行する
+            if (nodeName == "Photo")
+            {
+                _flutterConnectManager.SendPhotoSelect();
+                var parent = hitTransform.parent;
+                if (parent != null)
+                {
+                    _voteController = parent.GetComponent<VoteController>();
+                    if (_voteController == null)
+                    {
+                        Debug.LogWarning("[AppUIMaster] VoteController not found on parent.");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[AppUIMaster] Hit object has no parent for VoteController.");
+                }
+                // Debug.Log("[AppUIMaster] Photo object selected.");
+            }
+            else
+            {
+                // Debug.Log("[AppUIMaster] Other object selected.");
+            }
+        }
+    }
+
+    public async Task VoteParticles(int voteRate)
+    {
+        if (_voteController != null) {
+            float[] rateSet = new float[] { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
+            switch (voteRate)
+            {
+                case 0:
+                    rateSet[0] = 1.0f;
+                    break;
+                case 1:
+                    rateSet[1] = 1.0f;
+                    break;
+                case 2:
+                    rateSet[2] = 1.0f;
+                    break;
+                case 3:
+                    rateSet[3] = 1.0f;
+                    break;
+                case 4:
+                    rateSet[4] = 1.0f;
+                    break;
+                case -1:
+                    rateSet = new float[] { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
+                    break;
+                default:
+                    break;
+            }
+            _voteController.SetParticlesRate(rateSet);
+            _voteController.PlayParticles();
+            await Task.Yield();
         }
     }
 
