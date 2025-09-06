@@ -10,16 +10,24 @@ using Newtonsoft.Json;
 
 public class NodeStoreModels
 {
+    public static async Task<Thread> DeserializeThreadJsonFromFile(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            Debug.LogError($"File not found: {filePath}");
+            return new Thread();
+        }
+        string json = await File.ReadAllTextAsync(filePath);
+        return DeserializeThreadJson(json);
+    }
+    public static Thread DeserializeThreadJson(string json) => JsonConvert.DeserializeObject<Thread>(json);
+
+
+
     public static async Task SaveThread(Thread thread)
     {
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath);
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath);
-#endif
+        string folderPath = Application.persistentDataPath;
+
         ResourceUrls resources = new ResourceUrls();
         string threadUuid = thread.Uuid;
         int arLogCount = thread.ARLogSet.ARLogs.Count;
@@ -27,7 +35,7 @@ public class NodeStoreModels
         string logFilePath = Path.Combine(folderPath, "logs", $"{threadUuid}.json");
         string mapFilePath = Path.Combine(folderPath, "maps", $"{threadUuid}.dat");
         List<string> imageFilePaths = new List<string>();
-        for(int i = 0; i < arLogCount; i++)
+        for (int i = 0; i < arLogCount; i++)
         {
             string imageFilePath = Path.Combine(folderPath, "images", $"{thread.ARLogSet.ARLogs[i].Uuid}.jpg");
             imageFilePaths.Add(imageFilePath);

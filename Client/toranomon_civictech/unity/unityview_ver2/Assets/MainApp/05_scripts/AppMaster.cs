@@ -7,6 +7,7 @@ public class AppMaster : MonoBehaviour
 {
     private AppConfig appConfig;
     [SerializeField] private AppUIMaster _appUIMaster;
+    [SerializeField] private FlutterConnectManager _flutterConnectManager;
     [SerializeField] private DebugSystem _debugSystem;
     [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
 
@@ -16,13 +17,18 @@ public class AppMaster : MonoBehaviour
     {
         appConfig = new AppConfig();
         _appUIMaster.appConfig = appConfig;
+        _flutterConnectManager.appConfig = appConfig;
     }
     private void Start()
     {
         Initialize();
         _appUIMaster.Initialize();
+        _flutterConnectManager.Initialize();
+
         appConfig.SetAppMode(AppMode.Unspecified);
         appConfig.SetAppPhase(AppPhase.Initialization);
+
+        _flutterConnectManager.SendAwake();
     }
     private void Initialize()
     {
@@ -45,6 +51,7 @@ public class AppMaster : MonoBehaviour
     {
         Dispose();
         _appUIMaster.Dispose();
+        _flutterConnectManager.Dispose();
     }
     private void Dispose()
     {
@@ -52,8 +59,8 @@ public class AppMaster : MonoBehaviour
             => await PhaseControlHandler(oldPhase, newPhase);
     }
 
-    // 基本仕様は、AppUIMaster等でボタン同時のフェーズ切り替えと各種動作を実行
-    // AppMasterでは状態管理をし、動作完了後のフェーズ移動とタイムアウトを実施する
+    // ◆◆◆◆　基本仕様は、AppUIMaster等でボタン同時のフェーズ切り替えと各種動作を実行　◆◆◆◆
+    // ◆◆◆◆　AppMasterでは状態管理をし、動作完了後のフェーズ移動とタイムアウトを実施する　◆◆◆◆
     private async Task PhaseControlHandler(AppPhase oldPhase, AppPhase newPhase)
     {
         float timeOut = 0;
@@ -87,7 +94,7 @@ public class AppMaster : MonoBehaviour
                 appConfig.GotTracking = false;
                 // ウェイトタイムを入れる(UI側でのARView起動待ち)
                 timeOut = 0;
-                maxWaitTime = 180.0f; // 最大待機時間180秒
+                maxWaitTime = 5.0f; // 最大待機時間5秒
                 while (timeOut < maxWaitTime)
                 {
                     await Task.Delay(100);
@@ -104,8 +111,8 @@ public class AppMaster : MonoBehaviour
                     return;
                 }
                 // マップデータ読込後の処理を入れる
-                // ■■■■　ここでデータを呼び出す？　■■■■　appConfig.LoadThread();
-                appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                // appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                appConfig.SetAppPhase(AppPhase.Searching);
                 break;
 
             case AppPhase.Mapping:
@@ -156,7 +163,8 @@ public class AppMaster : MonoBehaviour
                 }
                 await Task.Delay(1000); // UI側の通知表示時間
                 // マッピング終了後、処理を移行する
-                appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                // appConfig.SetAppPhase(AppPhase.StandbyTracking);
+                appConfig.SetAppPhase(AppPhase.Searching);
                 break;
             /*
             case AppPhase.Mapped:

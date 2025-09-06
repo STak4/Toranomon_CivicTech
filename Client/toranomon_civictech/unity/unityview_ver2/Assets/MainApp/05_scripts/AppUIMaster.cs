@@ -1,15 +1,21 @@
+using System;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR.ARFoundation;
+using System.IO;
+using System.Collections.Generic;
+using UnityEngine.EventSystems;
 
 public class AppUIMaster : MonoBehaviour
 {
     public AppConfig appConfig { get; set; } = new AppConfig();
 
+    [SerializeField] private ARSession _arSession;
     [SerializeField] private ARCameraManager _arCameraManager;
     [SerializeField] private ARCameraBackground _arCameraBackground;
+    [SerializeField] private FlutterConnectManager _flutterConnectManager;
 
     [SerializeField] private MapperTCT _mapperTCT;
     [SerializeField] private TrackerTCT _trackerTCT;
@@ -26,14 +32,19 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private TMP_Text _informationText;
     [SerializeField] private GameObject _radarView;
 
-    [SerializeField] private Button _radarButton;
-    [SerializeField] private Button _trackingButton;
-    [SerializeField] private Button _arViewButton;
-    [SerializeField] private Button _mappingButton;
-    [SerializeField] private Button _photoShootButton;
-    [SerializeField] private Button _submitButton;
+    [SerializeField] public Button _radarButton;
+    [SerializeField] public Button _trackingButton;
+    [SerializeField] public Button _arViewButton;
+    [SerializeField] public Button _mappingButton;
+    [SerializeField] public Button _photoShootButton;
+    [SerializeField] public Button _submitButton;
 
     [SerializeField] private GameObject _photoObject;
+
+    [SerializeField] private List<GraphicRaycaster> _graphicRaycasters = null!;
+
+    private GameObject _generatedPhotoObject;
+    private string _generatedPhotoId;
 
     public void Initialize()
     {
@@ -48,6 +59,7 @@ public class AppUIMaster : MonoBehaviour
         // 明示的な初期化(関数だと不整合をおこす可能性を考慮)
         _arCameraBackground.enabled = false;
         _arCameraManager.enabled = false;
+        _arSession.enabled = true;
         _modeView.SetActive(false);
         _statusView.SetActive(false);
         _informationView.SetActive(false);
@@ -59,6 +71,11 @@ public class AppUIMaster : MonoBehaviour
         ARViewOnOff(false);
         InformationOnOff(false);
         RadarOnOff(false);
+
+        CameraManager.CameraRayAction += (pressVec, origin, direction) =>
+        {
+            CameraRaySelect(pressVec, origin, direction);
+        };
 
         appConfig.PhaseChangeAction += async (oldPhase, newPhase) =>
         {
@@ -90,6 +107,11 @@ public class AppUIMaster : MonoBehaviour
 
     public void Dispose()
     {
+        CameraManager.CameraRayAction -= (pressVec, origin, direction) =>
+        {
+            CameraRaySelect(pressVec, origin, direction);
+        };
+
         appConfig.PhaseChangeAction -= async (oldPhase, newPhase) =>
         {
             StatusChange(newPhase);
@@ -167,10 +189,10 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Standby:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
                 else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
                 if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
                 else _mappingButton.interactable = false;
@@ -179,10 +201,10 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Radar:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
                 else _radarButton.interactable = false;
                 _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
                 _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
@@ -194,7 +216,7 @@ public class AppUIMaster : MonoBehaviour
                 _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
 
-                _mappingButton.interactable = true;
+                _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
                 break;
@@ -218,13 +240,13 @@ public class AppUIMaster : MonoBehaviour
                 */
 
             case AppPhase.StandbyTracking:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = false;
                 else _radarButton.interactable = false;
                 if (appConfig.IsArView) _trackingButton.interactable = true;
                 else _trackingButton.interactable = false;
 
-                _arViewButton.interactable = true;
-                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
+                _arViewButton.interactable = false;
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
                 _photoShootButton.interactable = false;
                 _submitButton.interactable = false;
@@ -232,7 +254,7 @@ public class AppUIMaster : MonoBehaviour
 
             case AppPhase.Searching:
                 _radarButton.interactable = false;
-                _trackingButton.interactable = true;
+                _trackingButton.interactable = false;
                 _arViewButton.interactable = false;
 
                 _mappingButton.interactable = false;
@@ -241,23 +263,34 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.OnTracking:
-                if(mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = true;
+                if (mode == AppMode.Reaction || mode == AppMode.Unspecified) _radarButton.interactable = false;
                 else _radarButton.interactable = false;
-                if (appConfig.IsArView) _trackingButton.interactable = true;
+                if (appConfig.IsArView) _trackingButton.interactable = false;
                 else _trackingButton.interactable = false;
-                _arViewButton.interactable = true;
+                _arViewButton.interactable = false;
 
-                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = true;
+                if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
-                if (!submitted) _photoShootButton.interactable = true;
+                if (!madePhoto) _photoShootButton.interactable = true;
                 else _photoShootButton.interactable = false;
-                if (madePhoto && !submitted) _submitButton.interactable = true;
+                if (madePhoto && !submitted) _submitButton.interactable = false;
                 else _submitButton.interactable = false;
                 break;
 
             default:
                 break;
         }
+        SwitchGameObjects();
+
+    }
+    private void SwitchGameObjects()
+    {
+        _radarButton.gameObject.SetActive(_radarButton.interactable);
+        _trackingButton.gameObject.SetActive(_trackingButton.interactable);
+        _arViewButton.gameObject.SetActive(_arViewButton.interactable);
+        _mappingButton.gameObject.SetActive(_mappingButton.interactable);
+        _photoShootButton.gameObject.SetActive(_photoShootButton.interactable);
+        _submitButton.gameObject.SetActive(_submitButton.interactable);
     }
     private async Task ViewActiveChange(AppPhase newPhase)
     {
@@ -275,6 +308,7 @@ public class AppUIMaster : MonoBehaviour
                 break;
 
             case AppPhase.Radar:
+                ARViewOnOff(false);
                 RadarOnOff(true);
                 InformationOnOff(false);
                 break;
@@ -284,7 +318,7 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please see around for mapping...");
-                while(appConfig.GetAppPhase() == AppPhase.Mapping && !appConfig.MadeMap)
+                while (appConfig.GetAppPhase() == AppPhase.Mapping && !appConfig.MadeMap)
                 {
                     await Task.Delay(500);
                     if (appConfig.GetAppPhase() != AppPhase.Mapping || appConfig.MadeMap) break;
@@ -332,7 +366,7 @@ public class AppUIMaster : MonoBehaviour
                 RadarOnOff(false);
                 InformationOnOff(true);
                 InformationChange("Please look around to search for a track...");
-                while(appConfig.GetAppPhase() == AppPhase.Searching && !appConfig.GotTracking)
+                while (appConfig.GetAppPhase() == AppPhase.Searching && !appConfig.GotTracking)
                 {
                     await Task.Delay(500);
                     if (appConfig.GetAppPhase() != AppPhase.Searching || appConfig.GotTracking) break;
@@ -360,7 +394,7 @@ public class AppUIMaster : MonoBehaviour
                 break;
             default:
                 break;
-        }                
+        }
     }
     private void ModeOnOff(bool active)
     {
@@ -446,9 +480,79 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
     private async Task RadarSearch()
     {
-        // 一瞬待ちを入れる（ネットロードなら不要、ローカルロードのため）
-        await Task.Yield();
-        _ = _trackerTCT.LoadMapFromLocal();
+        Debug.Log("[AppUIMaster] RadarSearch start.");
+        string mapFolder = "maps";
+        string logFolder = "logs";
+        string imageFolder = "images";
+        string folderPath = Application.persistentDataPath;
+        string uuid = "";
+
+        string mapFolderPath = Path.Combine(folderPath, mapFolder);
+        if (Directory.Exists(mapFolderPath))
+        {
+            string[] files = Directory.GetFiles(mapFolderPath, "*.dat");
+            if (files.Length > 0)
+            {
+                string latestFile = "";
+                DateTime latestTime = DateTime.MinValue;
+                foreach (var file in files)
+                {
+                    DateTime fileTime = File.GetLastWriteTime(file);
+                    if (fileTime > latestTime)
+                    {
+                        latestTime = fileTime;
+                        latestFile = file;
+                    }
+                }
+                uuid = Path.GetFileNameWithoutExtension(latestFile);
+            }
+            else
+            {
+                Debug.LogWarning("[AppUIMaster] No map files found in the maps directory.");
+                appConfig.GotMap = false;
+                return;
+            }
+            Debug.Log($"[AppUIMaster] Set uuid: {uuid} for this thread.");
+        }
+        else
+        {
+            Debug.LogWarning("[AppUIMaster] Maps directory does not exist.");
+            appConfig.GotMap = false;
+            return;
+        }
+
+        string mapFileName = $"{uuid}.dat";
+        string logFileName = $"{uuid}.json";
+
+        string mapPath = Path.Combine(mapFolderPath, mapFileName);
+        await _trackerTCT.LoadMapFromLocal(mapPath);
+
+        string logFolderPath = Path.Combine(folderPath, logFolder);
+        string logPath = Path.Combine(logFolderPath, logFileName);
+        Thread threadData = await NodeStoreModels.DeserializeThreadJsonFromFile(logPath);
+
+        List<string> imageFileNames = new List<string>();
+        string imageFolderPath = Path.Combine(folderPath, imageFolder);
+        if (Directory.Exists(imageFolderPath))
+        {
+            var files = Directory.GetFiles(imageFolderPath, "*.jpg");
+            foreach (var file in files)
+            {
+                if (Path.GetFileName(file).Contains(uuid))
+                {
+                    imageFileNames.Add(Path.GetFileName(file));
+                }
+            }
+        }
+        if (!string.IsNullOrEmpty(threadData.Uuid))
+        {
+            appConfig.LoadThread(threadData);
+            appConfig.GotMap = true;
+        }
+        else
+        {
+            appConfig.GotMap = false;
+        }
     }
     private void MapLoadCompleteGot(bool success)
     {
@@ -464,25 +568,31 @@ public class AppUIMaster : MonoBehaviour
         }
     }
 
-    private async Task TriggerRadarButtonAction()
+    public async Task TriggerRadarButtonAction()
     {
+        // bool radarButtonActive = _radarButton.enabled;
+        // if (!radarButtonActive) return;
+
         bool isActive = _radarView.activeSelf;
         RadarOnOff(!isActive);
         bool willActivate = !isActive;
-        if(willActivate) InformationOnOff(false);
+        if (willActivate) InformationOnOff(false);
 
-        if (appConfig.GetAppPhase() == AppPhase.Standby && willActivate)
+        if (appConfig.GetAppPhase() == AppPhase.Standby)
         {
-            await RadarSearch();
             appConfig.SetAppPhase(AppPhase.Radar);
+            await RadarSearch();
         }
-        else if (appConfig.GetAppPhase() == AppPhase.Radar && !willActivate)
+        else if (appConfig.GetAppPhase() == AppPhase.Radar)
         {
             appConfig.SetAppPhase(AppPhase.Standby);
         }
     }
     private void TriggerARViewButtonAction()
     {
+        bool arViewButtonActive = _arViewButton.enabled;
+        if (!arViewButtonActive) return;
+
         bool isManagerActive = _arCameraManager.enabled;
         bool isBackgroundActive = _arCameraBackground.enabled;
         bool isActive = isManagerActive && isBackgroundActive;
@@ -512,7 +622,7 @@ public class AppUIMaster : MonoBehaviour
             }
             if (_trackerTCT.GetDeviceMapCondition() == true)
             {
-               appConfig.MadeMap = true;
+                appConfig.MadeMap = true;
             }
         }
         else
@@ -539,7 +649,7 @@ public class AppUIMaster : MonoBehaviour
             if (appConfig.GetAppPhase() == AppPhase.Searching)
             {
                 appConfig.GotTracking = true;
-            } 
+            }
             Debug.Log("[AppUIMaster] On tracking and track data saved.");
         }
         else
@@ -601,8 +711,11 @@ public class AppUIMaster : MonoBehaviour
     }
 
 
-    private async Task TriggerTrackingButtonAction()
+    public async Task TriggerTrackingButtonAction()
     {
+        bool trackingButtonActive = _trackingButton.enabled;
+        if (!trackingButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Searching)
         {
@@ -618,8 +731,11 @@ public class AppUIMaster : MonoBehaviour
             Debug.Log("[AppUIMaster] Tracking task stopped.");
         }
     }
-    private async Task TriggerMappingButtonAction()
+    public async Task TriggerMappingButtonAction()
     {
+        bool mappingButtonActive = _mappingButton.enabled;
+        if (!mappingButtonActive) return;
+
         Debug.Log("[AppUIMaster] Mapping button pressed.");
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Mapping)
@@ -641,7 +757,7 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆撮影の本実行関数◆◆◆◆
 
     // デバッグ用にパブリック化、実装はprivateにする
-    public async Task PhotoShoot()
+    public async Task<string> PhotoShoot()
     {
         Texture2D screenshot = _screenCapture.TakeScreenshot();
         //Texture2D screenshot = await _screenCapture.LoadScreenShotAtLocal("sample001.jpg");
@@ -654,35 +770,45 @@ public class AppUIMaster : MonoBehaviour
         Vector3 photoAnchorSize = _photoGenerator.GetPhotoObjectSize(screenshot);
 
         ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
-        string uuid = appConfig.AddARLog(arLog);
-        await _screenCapture.SaveScreenShotAtLocal(screenshot, uuid);
+        string uuidWithIndex = appConfig.AddARLog(arLog);
+        string filePath = await _screenCapture.SaveScreenShotAtLocal(screenshot, uuidWithIndex);
 
         _ = _shootEffect.PlayShootEffect();
 
         //空間にオブジェクトを生成
         bool isWorldPosition = false;
-        _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+        _generatedPhotoObject = _photoGenerator.GeneratePhotoObject(arLog, screenshot, isWorldPosition);
+        _generatedPhotoId = uuidWithIndex;
+
+        return filePath;
     }
 
-    private async Task TriggerPhotoShootButtonAction()
+    public async Task TriggerPhotoShootButtonAction()
     {
+        bool photoShootButtonActive = _photoShootButton.enabled;
+        if (!photoShootButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         AppMode mode = appConfig.GetAppMode();
         // AppPhase phase = appConfig.GetAppPhase();
         if (mode == AppMode.Proposal)
         {
-            await PhotoShoot();
+            string filePath = await PhotoShoot();
             appConfig.MadePhoto = true;
             // ボタンの状態を変更のために同フェーズで実行
             ButtonActiveChange(phase);
+            // Flutterへ撮影完了通知
+            _flutterConnectManager.SendPhotoShoot(filePath);
             Debug.Log("[AppUIMaster] MADE PHOTO!!");
         }
         else if (mode == AppMode.Reaction)
         {
-            await PhotoShoot();
+            string filePath = await PhotoShoot();
             appConfig.MadePhoto = true;
             // ボタンの状態を変更のために同フェーズで実行
             ButtonActiveChange(phase);
+            // Flutterへ撮影完了通知　■■■　恐らく今回の趣旨では下記動作は実行しない。　■■■
+            _flutterConnectManager.SendPhotoShoot(filePath);
             Debug.Log("[AppUIMaster] ADD PHOTO!!");
         }
         else
@@ -699,6 +825,9 @@ public class AppUIMaster : MonoBehaviour
 
     private async Task TriggerSubmitButtonAction()
     {
+        // bool submitButtonActive = _submitButton.enabled;
+        // if (!submitButtonActive) return;
+
         AppPhase phase = appConfig.GetAppPhase();
         AppMode mode = appConfig.GetAppMode();
         if (mode == AppMode.Proposal)
@@ -706,6 +835,7 @@ public class AppUIMaster : MonoBehaviour
             await Submit();
             appConfig.Submitted = true;
             ButtonActiveChange(phase);
+            // ■■■■ ここでデータを保存している／サーバーへの保存も検討 ■■■■
             await NodeStoreModels.SaveThread(appConfig.GetThread());
             Debug.Log("[AppUIMaster] PROPOSAL DONE!!");
         }
@@ -721,5 +851,174 @@ public class AppUIMaster : MonoBehaviour
 
         }
     }
+
+    // ◆◆◆◆再投稿の関数◆◆◆◆
+    public async Task Recapture(string reWritePath)
+    {
+        Debug.Log("[AppUIMaster] Recapture start.");
+        await _screenCapture.ClearScreenshotAtLocal(reWritePath);
+        if (_generatedPhotoObject != null)
+        {
+            Destroy(_generatedPhotoObject);
+            _generatedPhotoObject = null;
+        }
+        appConfig.RemoveARLog(_generatedPhotoId);
+        appConfig.MadePhoto = false;
+        AppPhase phase = appConfig.GetAppPhase();
+        ButtonActiveChange(phase);
+    }
+
+    // ◆◆◆◆生成完了の関数◆◆◆◆
+    public async Task Generated(string path, string reWritePath)
+    {
+        Debug.Log("[AppUIMaster] Generated start.");
+        byte[] imageBytes;
+        bool isPathExisting = File.Exists(path);
+        bool isRePathExisting = File.Exists(reWritePath);
+
+        if (isPathExisting && isRePathExisting)
+        {
+            try
+            {
+                imageBytes = await File.ReadAllBytesAsync(path);
+                await File.WriteAllBytesAsync(reWritePath, imageBytes);
+                await TriggerSubmitButtonAction();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to read image file at {path}. Exception: {ex.Message}");
+                return;
+            }
+            Texture2D texture = new Texture2D(2, 2);
+            if (!texture.LoadImage(imageBytes))
+            {
+                Debug.LogError("[FlutterDebugUI] ViewPhoto: Failed to load image data into texture");
+                return;
+            }
+            _photoGenerator.UpdateTexture(texture);
+        }
+        else if (isRePathExisting)
+        {
+            Debug.LogWarning($"[FlutterDebugUI] ViewPhoto: pathData is null or empty Path:{path}");
+            try
+            {
+                await TriggerSubmitButtonAction();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[FlutterDebugUI] ViewPhoto: Failed to write image file at {reWritePath}. Exception: {ex.Message}");
+            }
+        }
+    }
+
+
+    // ◆◆◆◆Rayの関数◆◆◆◆
+
+    //■■■■　乱雑なので混乱を招く可能性あり　■■■■
+    private VoteController _voteController = null;
+    // ボタンセレクト以外の挙動 ： 3Dオブジェクトセレクト時
+    private void CameraRaySelect(Vector2 pressVec, Vector3 origin, Vector3 direction)
+    {
+        //Log.Write($"Press vector: {pressVec}, Camera Ray Origin: {origin}, Direction: {direction}");
+        // Log.Write($"[AppMaster] CameraRaySelect called with pressVec: {pressVec}, origin: {origin}, direction: {direction}");
+
+        var eventData = new PointerEventData(EventSystem.current) { position = pressVec };
+        bool isUIHit = false;
+        bool is3DHit = false;
+        foreach (var raycaster in _graphicRaycasters)
+        {
+            var results = new List<RaycastResult>();
+            raycaster.Raycast(eventData, results);
+            if (results.Count > 0) { isUIHit = true; break; }
+            // Log.Write($"[AppMaster] Raycaster checked, results count: {results.Count}");
+        }
+        if (isUIHit)
+        {
+            // Log.Write($"[AppMaster] UI Hit");
+            return;
+        }
+        // Log.Write($"[AppMaster] No UI Hit");
+
+        // 3Dオブジェクトセレクト分岐処理
+        Ray ray = new Ray(origin, direction);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit))
+        {
+            is3DHit = true;
+        }
+        if (!is3DHit)
+        {
+            // 3Dオブジェクト非セレクト時の処理
+            return;
+        }
+
+        // 3Dオブジェクトがヒットした場合の処理
+        if (is3DHit)
+        {
+            // Debug.Log($"3D Object Hit: {hit.collider.name}");
+            var hitTransform = hit.collider.transform;
+            if (hitTransform == null) return;
+            string nodeName = hitTransform.name;
+            // Debug.Log($"3D Object Hit: {nodeName}");
+
+            // ある場合にUI表示を実行する
+            if (nodeName == "Photo")
+            {
+                _flutterConnectManager.SendPhotoSelect();
+                var parent = hitTransform.parent;
+                if (parent != null)
+                {
+                    _voteController = parent.GetComponent<VoteController>();
+                    if (_voteController == null)
+                    {
+                        Debug.LogWarning("[AppUIMaster] VoteController not found on parent.");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[AppUIMaster] Hit object has no parent for VoteController.");
+                }
+                // Debug.Log("[AppUIMaster] Photo object selected.");
+            }
+            else
+            {
+                // Debug.Log("[AppUIMaster] Other object selected.");
+            }
+        }
+    }
+
+    public async Task VoteParticles(int voteRate)
+    {
+        if (_voteController != null) {
+            float[] rateSet = new float[] { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
+            switch (voteRate)
+            {
+                case 0:
+                    rateSet[0] = 1.0f;
+                    break;
+                case 1:
+                    rateSet[1] = 1.0f;
+                    break;
+                case 2:
+                    rateSet[2] = 1.0f;
+                    break;
+                case 3:
+                    rateSet[3] = 1.0f;
+                    break;
+                case 4:
+                    rateSet[4] = 1.0f;
+                    break;
+                case -1:
+                    rateSet = new float[] { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
+                    break;
+                default:
+                    break;
+            }
+            _voteController.SetParticlesRate(rateSet);
+            _voteController.PlayParticles();
+            await Task.Yield();
+        }
+    }
+
 
 }

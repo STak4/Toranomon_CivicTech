@@ -36,10 +36,9 @@ public class DatastoreManagerTCT : MonoBehaviour
     public bool _networkRunning;
     private bool _inRoom=false;
     
-    private bool _sendNewMap=false;
-    private bool _waitForMap=false;
-
-    private Transform _tempRoot = null;
+    // private bool _sendNewMap = false;
+    // private bool _waitForMap = false;
+    // private Transform _tempRoot = null;
     
     /// <summary>
     /// CreateOrJoinDataStore(string storeName)

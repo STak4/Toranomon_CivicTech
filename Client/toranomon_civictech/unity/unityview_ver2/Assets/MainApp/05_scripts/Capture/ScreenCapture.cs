@@ -86,19 +86,12 @@ public class ScreenCaptureManager : MonoBehaviour
         return _screenShot;
     }
 
-    public async Task SaveScreenShotAtLocal(Texture2D scrSht, string uuid)
+    public async Task<string> SaveScreenShotAtLocal(Texture2D scrSht, string uuidWithIndex)
     {
         byte[] originalBytes = scrSht.EncodeToJPG(100);
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-#endif
-        string filePath = Path.Combine(folderPath, $"{uuid}.jpg");
+        string folderPath = Path.Combine(Application.persistentDataPath, "images");
+
+        string filePath = Path.Combine(folderPath, $"{uuidWithIndex}.jpg");
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
@@ -108,23 +101,32 @@ public class ScreenCaptureManager : MonoBehaviour
             // ファイルを書き込む
             await File.WriteAllBytesAsync(filePath, originalBytes);
             ScanMedia(filePath);
+            return filePath;
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save screenshot: {ex.Message}");
+            return string.Empty;
+        }
+    }
+    public async Task ClearScreenshotAtLocal(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            try
+            {
+                File.Delete(filePath);
+                await Task.Yield();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to delete screenshot: {ex.Message}");
+            }
         }
     }
     public async Task<Texture2D> LoadScreenShotAtLocal(string fileName)
     {
-        string folderPath;
-#if UNITY_ANDROID
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-        // folderPath = Path.Combine("/storage/emulated/0/Pictures", "enxross");
-#elif UNITY_IOS
-        folderPath = Path.Combine(Application.persistentDataPath, "Documents", "images");
-#else
-        folderPath = Path.Combine(Application.persistentDataPath, "images");
-#endif
+        string folderPath = Path.Combine(Application.persistentDataPath, "images");
         string filePath = Path.Combine(folderPath, fileName);
         if (!File.Exists(filePath))
         {
