@@ -55,6 +55,22 @@ public class FlutterConnectManager : MonoBehaviour
     {
         _ = SendFlutterCommand(FlutterMessageName.Openvote);
     }
+    public void SendLLH()
+    {
+        double[] llh = appConfig.GetThread().LLH;
+        if (llh == null || llh.Length == 0 || (llh.Length == 3 && llh[0] == 0 && llh[1] == 0))
+        {
+            Debug.LogWarning("位置情報が未設定のため、送信できません。");
+            return;
+        }
+        FlutterMessageData data = new FlutterMessageData
+        {
+            NameType = FlutterMessageName.Setlocation,
+            Lat = llh[0],
+            Lng = llh[1]
+        };
+        _ = SendFlutterCommand(FlutterMessageName.Setlocation, data);
+    }
 
     private async Task SendFlutterCommand(FlutterMessageName name, FlutterMessageData? data = null)
     {
@@ -211,9 +227,14 @@ public class FlutterConnectManager : MonoBehaviour
                 Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Vote");
                 break;
 
-            // ◆下記は位置情報受信（未開発／必要に応じて対応）
+            // ◆下記は位置情報受信
             case FlutterMessageName.Setlocation:
-                // ◆◆◆◆関数実行開発◆◆◆◆
+                appConfig.RecievedLLH = new double[3]
+                {
+                    message.Data?.Lat ?? 0,
+                    message.Data?.Lng ?? 0,
+                    0
+                };
                 await BlankTask();
                 Debug.Log("◆UNITY◆[FlutterConnectManager] FlutterCommand: Setlocation");
                 break;

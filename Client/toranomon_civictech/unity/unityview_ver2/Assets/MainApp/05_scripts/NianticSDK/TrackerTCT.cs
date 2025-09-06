@@ -156,10 +156,10 @@ public class TrackerTCT : MonoBehaviour
     {
         Debug.Log($"== Loading map from local: {filePath} ==");
         var serializedDeviceMap = await File.ReadAllBytesAsync(filePath);
-        await LoadMapFromLocal(serializedDeviceMap);
+        await LoadMapFromBytes(serializedDeviceMap);
     }
 
-    public async Task LoadMapFromLocal(byte[] serializedDeviceMap)
+    public async Task LoadMapFromBytes(byte[] serializedDeviceMap)
     {
         _deviceMap = ARDeviceMap.CreateFromSerializedData(serializedDeviceMap);
         if (_deviceMap != null)

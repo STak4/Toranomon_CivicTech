@@ -10,6 +10,7 @@ public class AppMaster : MonoBehaviour
     [SerializeField] private FlutterConnectManager _flutterConnectManager;
     [SerializeField] private DebugSystem _debugSystem;
     [SerializeField] private CompassWorldPoseTCT _compassWorldPoseTCT;
+    [SerializeField] private NodeNetwork _nodeNetwork;
 
     public AppConfig AppConfig { get => appConfig; private set => appConfig = value; }
 
@@ -110,9 +111,10 @@ public class AppMaster : MonoBehaviour
                     await Task.Delay(1000); // UI側の通知表示時間
                     return;
                 }
-                // マップデータ読込後の処理を入れる
+                // マップデータ読込後の処理を入れる　※Trigger呼び出しでないと処理が適切に行われない
                 // appConfig.SetAppPhase(AppPhase.StandbyTracking);
-                appConfig.SetAppPhase(AppPhase.Searching);
+                // appConfig.SetAppPhase(AppPhase.Searching);
+                await _appUIMaster.TriggerTrackingButtonAction();
                 break;
 
             case AppPhase.Mapping:
@@ -162,9 +164,10 @@ public class AppMaster : MonoBehaviour
                     return;
                 }
                 await Task.Delay(1000); // UI側の通知表示時間
-                // マッピング終了後、処理を移行する
+                // マッピング終了後、処理を移行する　※Trigger呼び出しでないと処理が適切に行われない
                 // appConfig.SetAppPhase(AppPhase.StandbyTracking);
-                appConfig.SetAppPhase(AppPhase.Searching);
+                // appConfig.SetAppPhase(AppPhase.Searching);
+                await _appUIMaster.TriggerTrackingButtonAction();
                 break;
             /*
             case AppPhase.Mapped:

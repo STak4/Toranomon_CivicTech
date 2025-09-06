@@ -241,6 +241,9 @@ public class DebugSystem : MonoBehaviour
         }
         fpsLong = fpsLongAmmount / fpsLongAverage.Count;
 
+        double[] llh = compassWorldPoseTCT.GetCurrentLLH();
+        float heading = compassWorldPoseTCT.GetCurrentHeading();
+
         returnStr +=
             $"Date and Time : {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")} \n" +
             $"Touch Count : {Input.touchCount}\n" +
@@ -258,9 +261,9 @@ public class DebugSystem : MonoBehaviour
             $"\n" +
             $"Camera local position : {Camera.main.transform.localPosition}\n" +
             $"Camera local euler angles : {Camera.main.transform.localEulerAngles}\n" +
-            $"Compass Heading : {compassWorldPoseTCT.CameraHelper.TrueHeading}\n" +
-            $"Compass Latitude : {compassWorldPoseTCT.CameraHelper.Latitude}\n" +
-            $"Compass Longitude : {compassWorldPoseTCT.CameraHelper.Longitude}\n" +
+            $"Compass Heading : {heading}\n" +
+            $"Compass Latitude : {llh[0]}\n" +
+            $"Compass Longitude : {llh[1]}\n" +
             // $"CURRENT FPS : {fps:F2} \n" +
             // $"CU.Long FPS : {fpsLong:F2} \n" +
             // $"MIN FPS CU. : {minFpsCurrent:F2} \n" +

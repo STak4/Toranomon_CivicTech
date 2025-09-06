@@ -52,6 +52,7 @@ public class AppConfig
     private byte[] _latestMapBytes = null;
     private byte[] _latestPhotoBytes = null;
     private ARLogUnit _latestARLog = null;
+    private double[] _recievedLLH = new double[3] { 0, 0, 0 };
 
     public event Action<AppPhase, AppPhase> PhaseChangeAction;
     public event Action<AppMode, AppMode> ModeChangeAction;
@@ -150,6 +151,11 @@ public class AppConfig
         get { return _latestPhotoBytes; }
         set { _latestPhotoBytes = value; }
     }
+    public double[] RecievedLLH
+    {
+        get { return _recievedLLH; }
+        set { _recievedLLH = value; }
+    }
 
     public Texture2D LatestPhotoTexture
     {
@@ -173,7 +179,9 @@ public class AppConfig
     {
         _currentThread = new Thread();
         _currentThread.Uuid = Guid.NewGuid().ToString();
-        _currentThread.LLH = llh;
+        if (llh != null && llh.Length == 3 && (llh[0] != 0 || llh[1] != 0)) _currentThread.LLH = llh;
+        // 内部で位置情報が取得できなかった場合のみ、RecievedLLHをセットする。
+        else _currentThread.LLH = RecievedLLH;
     }
 
     public void LoadThread(Thread thread)
@@ -186,6 +194,7 @@ public class AppConfig
         {
             log.Uuid = $"{_currentThread.Uuid}_{_currentThread.ARLogSet.ARLogs.Count.ToString("D4")}";
             _currentThread.ARLogSet.ARLogs.Add(log);
+            _latestARLog = log;
             return log.Uuid;
         }
         else
@@ -202,6 +211,7 @@ public class AppConfig
             if (logToRemove != null)
             {
                 _currentThread.ARLogSet.ARLogs.Remove(logToRemove);
+                if (_latestARLog != null && _latestARLog.Uuid == uuid) _latestARLog = null;
             }
             else
             {

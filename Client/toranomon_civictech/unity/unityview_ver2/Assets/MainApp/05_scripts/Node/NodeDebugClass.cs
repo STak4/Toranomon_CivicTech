@@ -100,13 +100,12 @@ public class NodeDebugClass : MonoBehaviour
         {
             var response = JsonConvert.DeserializeObject<ThreadResponse>(json);
             if (response?.threads == null) return new string[0];
-            var urls = new System.Collections.Generic.List<string>();
+            var logUrls = new List<string>();
             foreach (var thread in response.threads)
             {
-                if (!string.IsNullOrEmpty(thread.log))
-                    urls.Add(thread.log);
+                if (!string.IsNullOrEmpty(thread.log)) logUrls.Add(thread.log);
             }
-            return urls.ToArray();
+            return logUrls.ToArray();
         }
         catch
         {
