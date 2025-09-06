@@ -35,7 +35,7 @@ public class FlutterDebugUI : MonoBehaviour
     bool gotAwake = false;
     string pathData = "";
     string submitPathData = Application.streamingAssetsPath;
-    string submitImageData = "generatedSample.jpg";
+    string submitImageData = "nodata.jpg";
     double latitude = 35.666924;
     double longitude = 139.747533;
     private void Awake()
@@ -62,7 +62,6 @@ public class FlutterDebugUI : MonoBehaviour
         _blankView.SetActive(false);
         _postView.SetActive(false);
         _voteView.SetActive(false);
-
     }
     private void OnApplicationQuit()
     {

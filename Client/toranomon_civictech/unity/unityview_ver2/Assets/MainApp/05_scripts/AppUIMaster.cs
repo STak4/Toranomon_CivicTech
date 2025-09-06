@@ -7,6 +7,7 @@ using UnityEngine.XR.ARFoundation;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
+using Newtonsoft.Json;
 
 public class AppUIMaster : MonoBehaviour
 {
@@ -16,6 +17,7 @@ public class AppUIMaster : MonoBehaviour
     [SerializeField] private ARCameraManager _arCameraManager;
     [SerializeField] private ARCameraBackground _arCameraBackground;
     [SerializeField] private FlutterConnectManager _flutterConnectManager;
+    [SerializeField] private NodeNetwork _nodeNetwork;
 
     [SerializeField] private MapperTCT _mapperTCT;
     [SerializeField] private TrackerTCT _trackerTCT;
@@ -271,7 +273,7 @@ public class AppUIMaster : MonoBehaviour
 
                 if ((mode == AppMode.Proposal || mode == AppMode.Unspecified) && appConfig.IsArView) _mappingButton.interactable = false;
                 else _mappingButton.interactable = false;
-                if (!madePhoto) _photoShootButton.interactable = true;
+                if (!madePhoto && mode == AppMode.Proposal) _photoShootButton.interactable = true;
                 else _photoShootButton.interactable = false;
                 if (madePhoto && !submitted) _submitButton.interactable = false;
                 else _submitButton.interactable = false;
@@ -480,7 +482,44 @@ public class AppUIMaster : MonoBehaviour
     // ◆◆◆◆レーダーサーチの本実行関数◆◆◆◆
     private async Task RadarSearch(bool local = true)
     {
-        if (local)
+        if (!local)
+        {
+            Thread thread = await _nodeNetwork.ReadThreadAsync();
+            //string threadString = JsonConvert.SerializeObject(thread, Formatting.Indented);
+            //Debug.Log("Read Thread: " + threadString);
+            string mapUrl = thread.Resources.MapUrl;
+            List<string> imageUrls = thread.Resources.ImageUrls;
+
+            byte[] mapBytes = await _nodeNetwork.ReadThreadMapAsync(mapUrl);
+            await _trackerTCT.LoadMapFromBytes(mapBytes);
+            thread.Map = mapBytes;
+
+            List<byte[]> imageBytesList = await _nodeNetwork.ReadThreadImagesAsync(imageUrls);
+            foreach (var log in thread.ARLogSet.ARLogs)
+            {
+                foreach (var path in imageUrls)
+                {
+                    string logUuid = Path.GetFileNameWithoutExtension(path);
+                    if (log.Uuid == logUuid)
+                    {
+                        int index = imageUrls.IndexOf(path);
+                        if (index >= 0 && index < imageBytesList.Count)
+                        {
+                            log.Image = imageBytesList[index];
+                            Debug.Log($"[AppUIMaster] Loaded image for ARLog successfully. UUID: {log.Uuid}");
+                        }
+                        break;
+                    }
+                }
+            }
+            // AppConfigにデータを代入
+            appConfig.LoadThread(thread);
+            appConfig.GotMap = true;
+
+            // 写真オブジェクトの生成
+            await LoadPhotoModels();
+        }
+        else
         {
             string folderPath = Application.persistentDataPath;
             string logFolder = "logs";
@@ -545,7 +584,7 @@ public class AppUIMaster : MonoBehaviour
             {
                 byte[] serializedDeviceMap = await File.ReadAllBytesAsync(mapFilePath);
                 threadData.Map = serializedDeviceMap;
-                await _trackerTCT.LoadMapFromLocal(serializedDeviceMap);
+                await _trackerTCT.LoadMapFromBytes(serializedDeviceMap);
                 Debug.Log("[AppUIMaster] Map file loaded successfully.");
             }
             else
@@ -589,12 +628,6 @@ public class AppUIMaster : MonoBehaviour
             // 写真オブジェクトの生成
             await LoadPhotoModels();
         }
-        else
-        {
-            Debug.LogError("[AppUIMaster] RadarSearch with non-local source is not implemented.");
-        }
-
-        // データロード後にオブジェクト配置処理
         
     }
     private void MapLoadCompleteGot(bool success)
@@ -658,7 +691,7 @@ public class AppUIMaster : MonoBehaviour
         if (appConfig.GetAppPhase() == AppPhase.Standby)
         {
             appConfig.SetAppPhase(AppPhase.Radar);
-            await RadarSearch(true);
+            await RadarSearch(false);
         }
         else if (appConfig.GetAppPhase() == AppPhase.Radar)
         {
@@ -790,8 +823,8 @@ public class AppUIMaster : MonoBehaviour
 
     public async Task TriggerTrackingButtonAction()
     {
-        bool trackingButtonActive = _trackingButton.enabled;
-        if (!trackingButtonActive) return;
+        // bool trackingButtonActive = _trackingButton.enabled;
+        // if (!trackingButtonActive) return;
 
         AppPhase phase = appConfig.GetAppPhase();
         if (phase != AppPhase.Searching)
@@ -837,6 +870,7 @@ public class AppUIMaster : MonoBehaviour
     public async Task<string> PhotoShoot()
     {
         Texture2D screenshot = _screenCapture.TakeScreenshot();
+        byte[] imageBytes = screenshot.EncodeToJPG(100);
         //Texture2D screenshot = await _screenCapture.LoadScreenShotAtLocal("sample001.jpg");
 
         Transform cameraTransform = Camera.main.transform;
@@ -847,6 +881,7 @@ public class AppUIMaster : MonoBehaviour
         Vector3 photoAnchorSize = _photoGenerator.GetPhotoObjectSize(screenshot);
 
         ARLogUnit arLog = new ARLogUnit(photoAnchorPosition, photoAnchorEuler, photoAnchorSize);
+        arLog.Image = imageBytes;
         string uuidWithIndex = appConfig.AddARLog(arLog);
         string filePath = await _screenCapture.SaveScreenShotAtLocal(screenshot, uuidWithIndex);
 
@@ -895,9 +930,24 @@ public class AppUIMaster : MonoBehaviour
     }
 
     // ◆◆◆◆投稿の本実行関数◆◆◆◆
-    private async Task Submit()
+    private async Task Submit(AppMode mode)
     {
-        await Task.Yield();
+        if (mode == AppMode.Proposal)
+        {
+            // ■■■■ ここでデータを保存している／サーバーへの保存も実行 ■■■■
+            Thread sendThread = appConfig.GetThread();
+            await NodeStoreModels.SaveThread(sendThread);
+            string result = await _nodeNetwork.CreateThreadAsync(sendThread);
+            Debug.Log($"[AppUIMaster] Thread submission result:\n     {result}");
+        }
+        else if (mode == AppMode.Reaction)
+        {
+
+        }
+        else
+        {
+
+        }
     }
 
     private async Task TriggerSubmitButtonAction()
@@ -909,16 +959,14 @@ public class AppUIMaster : MonoBehaviour
         AppMode mode = appConfig.GetAppMode();
         if (mode == AppMode.Proposal)
         {
-            await Submit();
+            await Submit(mode);
             appConfig.Submitted = true;
             ButtonActiveChange(phase);
-            // ■■■■ ここでデータを保存している／サーバーへの保存も検討 ■■■■
-            await NodeStoreModels.SaveThread(appConfig.GetThread());
             Debug.Log("[AppUIMaster] PROPOSAL DONE!!");
         }
         else if (mode == AppMode.Reaction)
         {
-            await Submit();
+            await Submit(mode);
             appConfig.Submitted = true;
             ButtonActiveChange(phase);
             Debug.Log("[AppUIMaster] REACTION DONE!!");
@@ -967,7 +1015,9 @@ public class AppUIMaster : MonoBehaviour
             try
             {
                 imageBytes = await File.ReadAllBytesAsync(path);
+                appConfig.LatestARLog.Image = imageBytes;
                 await File.WriteAllBytesAsync(reWritePath, imageBytes);
+                // 下記で保存も実行
                 await TriggerSubmitButtonAction();
             }
             catch (Exception ex)
