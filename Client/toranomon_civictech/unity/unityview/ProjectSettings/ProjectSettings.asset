@@ -163,7 +163,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.unity.template.ar_mobile
+    Android: com.Toranomon_CivicTech.CivicTech_Unity
     Standalone: com.unity.template.ar-mobile
     iPhone: com.Toranomon-CivicTech.CivicTech-Unity
   buildNumber:
